@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../../data/interview.db"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String?
+  email       String?
+  resumePath  String?
+  resumeText  String?
+  skills      String?  // JSON string array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Company {
+  id             String          @id @default(cuid())
+  name           String
+  position       String
+  jd             String
+  skills         String?         // JSON string array
+  matchScore     Float?
+  status         String          @default("active")
+  createdAt      DateTime        @default(now())
+  interviews     Interview[]
+  mockInterviews MockInterview[]
+}
+
+model Interview {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  round       Int
+  scheduledAt DateTime
+  status      String   @default("scheduled")
+  audioPath   String?
+  transcript  String?
+  aiAnalysis  String?  // JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String
+  frequency Int      @default(1)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+}
+
+model MockInterview {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  questions String   // JSON string
+  createdAt DateTime @default(now())
+}
