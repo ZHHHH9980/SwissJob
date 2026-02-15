@@ -27,13 +27,41 @@ An open-source interview management tool designed to help job seekers organize, 
 
 ## Installation
 
+### Prerequisites
+- Node.js 18+ and npm
+- Python 3.11+ (Python 3.13 has compatibility issues with some audio libraries)
+- FFmpeg (for audio processing): `brew install ffmpeg`
+
+### Setup
+
 1. Clone the repository
+
 2. Install dependencies:
    ```bash
    npm install
    ```
 
-This will install both frontend and backend dependencies automatically.
+3. Set up Python virtual environment and install backend dependencies:
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   cd ..
+   ```
+
+   **Note**: If you encounter issues installing `faster-whisper` on Python 3.13, you can:
+   - Use Python 3.11 or 3.12 instead, OR
+   - Skip Whisper for now and install other dependencies manually:
+     ```bash
+     pip install fastapi uvicorn python-multipart pdfplumber httpx python-dotenv
+     ```
+
+4. Configure environment variables:
+   ```bash
+   cp backend/.env.example backend/.env
+   # Edit backend/.env and add your API keys
+   ```
 
 ## Usage
 
