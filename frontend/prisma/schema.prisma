@@ -43,6 +43,9 @@ model Interview {
   aiAnalysis  String?  // JSON string
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([status, scheduledAt])
 }
 
 model Skill {
@@ -60,4 +63,6 @@ model MockInterview {
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   questions String   // JSON string
   createdAt DateTime @default(now())
+
+  @@index([companyId])
 }
