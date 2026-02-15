@@ -1,0 +1,17 @@
+{
+  "name": "interview-helper",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && python -m uvicorn main:app --reload --port 8000",
+    "start:frontend": "npm run dev --workspace=frontend",
+    "postinstall": "cd backend && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
