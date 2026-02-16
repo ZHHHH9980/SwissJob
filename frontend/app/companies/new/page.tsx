@@ -7,6 +7,7 @@ import Link from 'next/link'
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  showConfirmation?: boolean
   data?: {
     company?: string
     position?: string
@@ -27,6 +28,8 @@ export default function NewCompanyPage() {
     jd?: string
   } | null>(null)
   const [isInitialSubmit, setIsInitialSubmit] = useState(true)
+  const [isJdExpanded, setIsJdExpanded] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,19 +54,77 @@ export default function NewCompanyPage() {
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
-        content: `I've analyzed the job description. Here's what I found:
-
-**Company:** ${mockExtraction.company}
-**Position:** ${mockExtraction.position}
-**Required Skills:** ${mockExtraction.skills.join(', ')}
-
-The full job description has been saved. Does this look correct? You can ask me to make any changes, or say "confirm" to save this position.`,
+        content: `I've analyzed the job description. Here's what I found:`,
+        showConfirmation: true,
         data: mockExtraction
       }
 
       setChatMessages(prev => [...prev, assistantMessage])
       setIsChatProcessing(false)
     }, 1500)
+  }
+
+  const handleConfirm = async () => {
+    if (!extractedData) return
+
+    setIsSaving(true)
+
+    try {
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: extractedData.company,
+          position: extractedData.position,
+          jd: extractedData.jd,
+          skills: extractedData.skills
+        })
+      })
+
+      if (response.ok) {
+        const successMessage: ChatMessage = {
+          role: 'assistant',
+          content: 'Perfect! The position has been saved successfully. Redirecting you to the positions list...'
+        }
+        setChatMessages(prev => [...prev, successMessage])
+
+        setTimeout(() => {
+          router.push('/companies')
+        }, 1500)
+      } else {
+        const error = await response.json()
+        const errorMessage: ChatMessage = {
+          role: 'assistant',
+          content: `Sorry, there was an error saving the position: ${error.error}. Please try again.`
+        }
+        setChatMessages(prev => [...prev, errorMessage])
+        setIsSaving(false)
+      }
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: 'Sorry, there was an error saving the position. Please try again.'
+      }
+      setChatMessages(prev => [...prev, errorMessage])
+      setIsSaving(false)
+    }
+  }
+
+  const handleEdit = () => {
+    const editMessage: ChatMessage = {
+      role: 'assistant',
+      content: `Sure! What would you like to change? You can:
+
+• Change the company name (e.g., "Change company to Meta")
+• Update the position (e.g., "Update position to Staff Engineer")
+• Add skills (e.g., "Add Python")
+• Remove skills (e.g., "Remove React")
+
+Just tell me what you'd like to adjust.`
+    }
+    setChatMessages(prev => [...prev, editMessage])
   }
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -75,56 +136,6 @@ The full job description has been saved. Does this look correct? You can ask me 
     const userInput = chatInput.toLowerCase()
     setChatInput('')
     setIsChatProcessing(true)
-
-    // Check if user wants to confirm
-    if (userInput.includes('confirm') || userInput.includes('yes') || userInput.includes('correct') || userInput.includes('save')) {
-      // Save to backend
-      try {
-        const response = await fetch('/api/companies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: extractedData.company,
-            position: extractedData.position,
-            jd: extractedData.jd,
-            skills: extractedData.skills
-          })
-        })
-
-        if (response.ok) {
-          const assistantMessage: ChatMessage = {
-            role: 'assistant',
-            content: 'Perfect! The position has been saved successfully. Redirecting you to the positions list...'
-          }
-          setChatMessages(prev => [...prev, assistantMessage])
-          setIsChatProcessing(false)
-
-          setTimeout(() => {
-            router.push('/companies')
-          }, 1500)
-          return
-        } else {
-          const error = await response.json()
-          const assistantMessage: ChatMessage = {
-            role: 'assistant',
-            content: `Sorry, there was an error saving the position: ${error.error}. Please try again.`
-          }
-          setChatMessages(prev => [...prev, assistantMessage])
-          setIsChatProcessing(false)
-          return
-        }
-      } catch (error) {
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: 'Sorry, there was an error saving the position. Please try again.'
-        }
-        setChatMessages(prev => [...prev, assistantMessage])
-        setIsChatProcessing(false)
-        return
-      }
-    }
 
     // Handle modifications
     setTimeout(() => {
@@ -143,8 +154,8 @@ The full job description has been saved. Does this look correct? You can ask me 
           newData.position = match[1].trim()
           response = `Perfect! The position is now **${newData.position}**.`
         }
-      } else if (userInput.includes('add') && userInput.includes('skill')) {
-        const match = userInput.match(/add (.+?) (?:to )?skill/i) || userInput.match(/add (.+)/i)
+      } else if (userInput.includes('add') && (userInput.includes('skill') || userInput.match(/add [a-z]+$/i))) {
+        const match = userInput.match(/add (.+?)(?:\s+(?:to\s+)?skill)?$/i)
         if (match) {
           const skill = match[1].trim()
           if (!newData.skills?.includes(skill)) {
@@ -155,7 +166,7 @@ The full job description has been saved. Does this look correct? You can ask me 
           }
         }
       } else if (userInput.includes('remove') && userInput.includes('skill')) {
-        const match = userInput.match(/remove (.+?) (?:from )?skill/i) || userInput.match(/remove (.+)/i)
+        const match = userInput.match(/remove (.+?)(?:\s+(?:from\s+)?skill)?$/i)
         if (match) {
           const skill = match[1].trim()
           newData.skills = newData.skills?.filter(s => s.toLowerCase() !== skill.toLowerCase())
@@ -166,28 +177,18 @@ The full job description has been saved. Does this look correct? You can ask me 
 
 • Change the company name (e.g., "Change company to Meta")
 • Update the position (e.g., "Update position to Staff Engineer")
-• Add skills (e.g., "Add Python to skills")
-• Remove skills (e.g., "Remove React from skills")
-• Say "confirm" or "save" when everything looks good
+• Add skills (e.g., "Add Python")
+• Remove skills (e.g., "Remove React")
 
 What would you like to adjust?`
       }
 
       setExtractedData(newData)
 
-      // Add summary if data was changed
-      if (response && !response.includes('can help you refine')) {
-        response += `\n\nCurrent information:
-**Company:** ${newData.company}
-**Position:** ${newData.position}
-**Skills:** ${newData.skills?.join(', ')}
-
-Say "confirm" to save, or ask for more changes.`
-      }
-
       const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: response,
+        showConfirmation: !response.includes('can help you refine'),
         data: newData
       }
       setChatMessages(prev => [...prev, assistantMessage])
@@ -229,15 +230,77 @@ Say "confirm" to save, or ask for more changes.`
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[85%] rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-white px-4 py-3'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line" style={{ wordBreak: 'break-word' }}>
+                  <p className="text-sm whitespace-pre-line px-4 py-3" style={{ wordBreak: 'break-word' }}>
                     {message.content}
                   </p>
+
+                  {/* Show extracted data with confirm button */}
+                  {message.showConfirmation && message.data && (
+                    <div className="mt-3 space-y-3 px-4 pb-3">
+                      <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="text-xs text-gray-500 mb-1">Company</div>
+                        <div className="font-semibold text-gray-900">{message.data.company}</div>
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="text-xs text-gray-500 mb-1">Position</div>
+                        <div className="font-semibold text-gray-900">{message.data.position}</div>
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="text-xs text-gray-500 mb-1">Required Skills</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {message.data.skills?.map((skill) => (
+                            <span key={skill} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="text-xs text-gray-500">Full Job Description</div>
+                          <button
+                            onClick={() => setIsJdExpanded(!isJdExpanded)}
+                            className="text-xs text-blue-600 hover:text-blue-700"
+                          >
+                            {isJdExpanded ? 'Show Less' : 'Show More'}
+                          </button>
+                        </div>
+                        <div className={`text-xs text-gray-700 whitespace-pre-wrap ${isJdExpanded ? '' : 'max-h-20 overflow-hidden relative'}`}>
+                          {message.data.jd}
+                          {!isJdExpanded && (
+                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent"></div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={handleConfirm}
+                          disabled={isSaving}
+                          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm disabled:opacity-50"
+                        >
+                          {isSaving ? 'Saving...' : '✓ Confirm & Save'}
+                        </button>
+                        <button
+                          onClick={handleEdit}
+                          disabled={isSaving}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm disabled:opacity-50"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -272,14 +335,14 @@ Say "confirm" to save, or ask for more changes.`
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask me to make changes, or say 'confirm' to save..."
+                  placeholder="Ask me to make changes..."
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={isChatProcessing}
+                  disabled={isChatProcessing || isSaving}
                 />
               )}
               <button
                 type="submit"
-                disabled={isChatProcessing || !chatInput.trim()}
+                disabled={isChatProcessing || !chatInput.trim() || isSaving}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {isChatProcessing ? 'Processing...' : isInitialSubmit ? 'Analyze' : 'Send'}
@@ -288,7 +351,7 @@ Say "confirm" to save, or ask for more changes.`
             <p className="text-xs text-gray-500 mt-2">
               {isInitialSubmit
                 ? 'Paste the full job description and I\'ll extract the key information'
-                : 'Chat naturally - I\'ll understand what you want to change'}
+                : 'You can also click the buttons above to confirm or edit'}
             </p>
           </div>
         </div>
