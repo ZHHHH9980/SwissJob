@@ -17,6 +17,7 @@ export default function NewCompanyPage() {
     company?: string
     position?: string
     skills?: string[]
+    jd?: string
   } | null>(null)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
@@ -32,7 +33,8 @@ export default function NewCompanyPage() {
       const mockExtraction = {
         company: 'Google',
         position: 'Senior Software Engineer',
-        skills: ['React', 'TypeScript', 'System Design']
+        skills: ['React', 'TypeScript', 'System Design'],
+        jd: input
       }
       setExtractedData(mockExtraction)
       setIsProcessing(false)
@@ -66,13 +68,13 @@ export default function NewCompanyPage() {
         const match = input.match(/(?:change|update) company to (.+)/i)
         if (match) {
           newData.company = match[1].trim()
-          response = `Updated company to "${newData.company}"`
+          response = `Got it! I've updated the company to ${newData.company}.`
         }
       } else if (input.includes('change position') || input.includes('update position')) {
         const match = input.match(/(?:change|update) position to (.+)/i)
         if (match) {
           newData.position = match[1].trim()
-          response = `Updated position to "${newData.position}"`
+          response = `Perfect! The position is now ${newData.position}.`
         }
       } else if (input.includes('add') && input.includes('skill')) {
         const match = input.match(/add (.+?) (?:to )?skill/i) || input.match(/add (.+)/i)
@@ -80,9 +82,9 @@ export default function NewCompanyPage() {
           const skill = match[1].trim()
           if (!newData.skills?.includes(skill)) {
             newData.skills = [...(newData.skills || []), skill]
-            response = `Added "${skill}" to skills`
+            response = `Great! I've added ${skill} to the skills list.`
           } else {
-            response = `"${skill}" is already in the skills list`
+            response = `${skill} is already in the skills list, so no changes needed.`
           }
         }
       } else if (input.includes('remove') && input.includes('skill')) {
@@ -90,10 +92,10 @@ export default function NewCompanyPage() {
         if (match) {
           const skill = match[1].trim()
           newData.skills = newData.skills?.filter(s => s.toLowerCase() !== skill.toLowerCase())
-          response = `Removed "${skill}" from skills`
+          response = `Done! I've removed ${skill} from the skills list.`
         }
       } else {
-        response = "I can help you update the extracted data. Try commands like:\n- 'Change company to Meta'\n- 'Update position to Staff Engineer'\n- 'Add Python to skills'\n- 'Remove React from skills'"
+        response = "I'm here to help you refine the extracted information! You can ask me to:\n\n• Change the company name (e.g., 'Change company to Meta')\n• Update the position (e.g., 'Update position to Staff Engineer')\n• Add skills (e.g., 'Add Python to skills')\n• Remove skills (e.g., 'Remove React from skills')\n\nWhat would you like to adjust?"
       }
 
       setExtractedData(newData)
@@ -197,6 +199,13 @@ Requirements: 5+ years experience with React, TypeScript, and distributed system
                   ))}
                 </div>
               </div>
+
+              <div className="border border-gray-200 rounded-lg p-4">
+                <label className="text-sm font-medium text-gray-600">Full Job Description</label>
+                <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  {extractedData.jd}
+                </p>
+              </div>
             </div>
 
             {/* Chat Interface */}
@@ -231,7 +240,7 @@ Requirements: 5+ years experience with React, TypeScript, and distributed system
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a command like 'Change company to Meta' or 'Add Python to skills'"
+                  placeholder="Ask me to make changes, like 'Change company to Meta' or 'Add Python'"
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isChatProcessing}
                 />
@@ -245,7 +254,7 @@ Requirements: 5+ years experience with React, TypeScript, and distributed system
               </form>
 
               <p className="text-xs text-gray-500 mt-2">
-                Try: "Change company to Meta", "Update position to Staff Engineer", "Add Python to skills"
+                Feel free to ask naturally - I'll understand what you want to change!
               </p>
             </div>
 

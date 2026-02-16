@@ -6,12 +6,13 @@ import { useParams } from 'next/navigation'
 
 export default function CompanyDetailPage() {
   const params = useParams()
+  const [isJdExpanded, setIsJdExpanded] = useState(false)
 
   const [company] = useState({
     id: params.id,
     name: 'Google',
     position: 'Senior Software Engineer',
-    jd: 'We are looking for an experienced software engineer to join our Cloud Platform team...',
+    jd: 'We are looking for an experienced software engineer to join our Cloud Platform team. This is a full-time position based in Mountain View, CA.\n\nResponsibilities:\n- Design and implement scalable distributed systems\n- Collaborate with cross-functional teams to deliver high-quality software\n- Mentor junior engineers and contribute to technical direction\n- Participate in code reviews and architectural discussions\n\nRequirements:\n- 5+ years of experience in software engineering\n- Strong proficiency in React, TypeScript, and Node.js\n- Experience with system design and distributed systems\n- Excellent communication and collaboration skills\n- Bachelor\'s degree in Computer Science or related field\n\nNice to have:\n- Experience with cloud platforms (GCP, AWS, Azure)\n- Knowledge of containerization and orchestration (Docker, Kubernetes)\n- Open source contributions',
     skills: ['React', 'TypeScript', 'Node.js', 'System Design'],
     matchScore: 85,
     status: 'pending' as const,
@@ -50,8 +51,21 @@ export default function CompanyDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{company.jd}</p>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Job Description</h2>
+                <button
+                  onClick={() => setIsJdExpanded(!isJdExpanded)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  {isJdExpanded ? 'Show Less' : 'Show More'}
+                </button>
+              </div>
+              <div className={`text-gray-700 whitespace-pre-wrap ${isJdExpanded ? '' : 'max-h-48 overflow-hidden relative'}`}>
+                {company.jd}
+                {!isJdExpanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent"></div>
+                )}
+              </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
