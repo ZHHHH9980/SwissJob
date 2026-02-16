@@ -7,19 +7,21 @@ interface Company {
   id: string
   name: string
   position: string
-  status: string
+  status: 'pending' | 'in-progress' | 'completed'
   matchScore?: number
   createdAt: string
 }
 
 export default function CompaniesPage() {
-  // Mock data for now
-  const [companies] = useState<Company[]>([
+  const [activeTab, setActiveTab] = useState<'pending' | 'in-progress' | 'completed'>('pending')
+
+  // Mock data with different statuses
+  const allCompanies: Company[] = [
     {
       id: '1',
       name: 'Google',
       position: 'Senior Software Engineer',
-      status: 'active',
+      status: 'pending',
       matchScore: 85,
       createdAt: '2026-02-10'
     },
@@ -27,11 +29,27 @@ export default function CompaniesPage() {
       id: '2',
       name: 'Microsoft',
       position: 'Frontend Developer',
-      status: 'active',
+      status: 'in-progress',
       matchScore: 92,
       createdAt: '2026-02-12'
+    },
+    {
+      id: '3',
+      name: 'Amazon',
+      position: 'Full Stack Engineer',
+      status: 'completed',
+      matchScore: 78,
+      createdAt: '2026-02-08'
     }
-  ])
+  ]
+
+  const companies = allCompanies.filter(c => c.status === activeTab)
+
+  const statusConfig = {
+    pending: { label: 'Pending', color: 'blue', count: allCompanies.filter(c => c.status === 'pending').length },
+    'in-progress': { label: 'In Progress', color: 'yellow', count: allCompanies.filter(c => c.status === 'in-progress').length },
+    completed: { label: 'Completed', color: 'green', count: allCompanies.filter(c => c.status === 'completed').length }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,26 +57,52 @@ export default function CompaniesPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">职位管理</h1>
-            <p className="text-gray-600 mt-2">管理你的求职申请和面试</p>
+            <h1 className="text-3xl font-bold text-gray-900">Job Applications</h1>
+            <p className="text-gray-600 mt-2">Manage your interview pipeline</p>
           </div>
           <Link
             href="/companies/new"
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
           >
-            + 添加职位
+            + Add Position
           </Link>
+        </div>
+
+        {/* Status Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
+          {(Object.keys(statusConfig) as Array<keyof typeof statusConfig>).map((status) => {
+            const config = statusConfig[status]
+            const isActive = activeTab === status
+            return (
+              <button
+                key={status}
+                onClick={() => setActiveTab(status)}
+                className={`px-6 py-3 font-medium transition relative ${
+                  isActive
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {config.label}
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {config.count}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         {/* Companies Grid */}
         {companies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">还没有添加职位</p>
+          <div className="text-center py-12 bg-white rounded-lg">
+            <p className="text-gray-500 text-lg">No positions in this stage</p>
             <Link
               href="/companies/new"
               className="text-blue-600 hover:underline mt-2 inline-block"
             >
-              添加第一个职位 →
+              Add your first position →
             </Link>
           </div>
         ) : (
@@ -73,14 +117,14 @@ export default function CompaniesPage() {
                   <h3 className="text-xl font-bold text-gray-900">{company.name}</h3>
                   {company.matchScore && (
                     <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
-                      {company.matchScore}% 匹配
+                      {company.matchScore}% Match
                     </span>
                   )}
                 </div>
                 <p className="text-gray-700 mb-4">{company.position}</p>
                 <div className="flex justify-between items-center text-sm text-gray-500">
                   <span>{company.createdAt}</span>
-                  <span className="text-blue-600">查看详情 →</span>
+                  <span className="text-blue-600">View Details →</span>
                 </div>
               </Link>
             ))}
