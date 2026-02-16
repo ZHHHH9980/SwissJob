@@ -19,7 +19,17 @@
       "Bash(brew install:*)",
       "Bash(npm run start:frontend)",
       "Bash(curl:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(gh:*)",
+      "Bash(git push:*)",
+      "Bash(chmod:*)",
+      "Bash(./setup.sh:*)",
+      "Bash(npm install openai pdf-parse)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm outdated)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
