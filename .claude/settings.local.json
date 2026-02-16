@@ -29,7 +29,9 @@
       "Bash(npm outdated)",
       "Bash(npm run dev:*)",
       "Bash(npm run build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }
