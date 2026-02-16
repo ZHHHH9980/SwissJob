@@ -7,9 +7,9 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "next dev --workspace=frontend",
-    "build": "next build --workspace=frontend",
-    "start": "next start --workspace=frontend"
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "start": "npm run start --workspace=frontend"
   },
   "dependencies": {
     "openai": "^6.22.0",
