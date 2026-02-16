@@ -41,11 +41,31 @@ export default function NewCompanyPage() {
     }, 1500)
   }
 
-  const handleConfirm = () => {
-    // TODO: Save to backend
-    console.log('Saving:', extractedData)
-    alert('Position added! (Using mock data)')
-    router.push('/companies')
+  const handleConfirm = async () => {
+    try {
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: extractedData?.company,
+          position: extractedData?.position,
+          jd: extractedData?.jd,
+          skills: extractedData?.skills
+        })
+      })
+
+      if (response.ok) {
+        router.push('/companies')
+      } else {
+        const error = await response.json()
+        alert(`Failed to save: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error saving company:', error)
+      alert('Failed to save position. Please try again.')
+    }
   }
 
   const handleChatSubmit = async (e: React.FormEvent) => {

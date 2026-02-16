@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 interface Company {
@@ -14,34 +14,24 @@ interface Company {
 
 export default function CompaniesPage() {
   const [activeTab, setActiveTab] = useState<'pending' | 'in-progress' | 'completed'>('pending')
+  const [allCompanies, setAllCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock data with different statuses
-  const allCompanies: Company[] = [
-    {
-      id: '1',
-      name: 'Google',
-      position: 'Senior Software Engineer',
-      status: 'pending',
-      matchScore: 85,
-      createdAt: '2026-02-10'
-    },
-    {
-      id: '2',
-      name: 'Microsoft',
-      position: 'Frontend Developer',
-      status: 'in-progress',
-      matchScore: 92,
-      createdAt: '2026-02-12'
-    },
-    {
-      id: '3',
-      name: 'Amazon',
-      position: 'Full Stack Engineer',
-      status: 'completed',
-      matchScore: 78,
-      createdAt: '2026-02-08'
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch('/api/companies')
+      const data = await response.json()
+      setAllCompanies(data)
+    } catch (error) {
+      console.error('Error fetching companies:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const companies = allCompanies.filter(c => c.status === activeTab)
 
@@ -49,6 +39,14 @@ export default function CompaniesPage() {
     pending: { label: 'Pending', color: 'blue', count: allCompanies.filter(c => c.status === 'pending').length },
     'in-progress': { label: 'In Progress', color: 'yellow', count: allCompanies.filter(c => c.status === 'in-progress').length },
     completed: { label: 'Completed', color: 'green', count: allCompanies.filter(c => c.status === 'completed').length }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
   }
 
   return (
