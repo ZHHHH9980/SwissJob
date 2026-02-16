@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'InterviewAce - Your AI-Powered Interview Companion',
-  description: 'Open-source, AI-powered interview management platform for job seekers. Organize applications, prepare for interviews, and track your job search journey.',
+  title: 'SwissJob - Your Swiss Army Knife for Job Hunting',
+  description: 'The only tool you need for your job search journey. Open-source, AI-powered platform to organize applications, prepare for interviews, and land your dream job.',
 }
 
 export default function RootLayout({

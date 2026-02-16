@@ -1,8 +1,8 @@
-# InterviewAce
+# SwissJob
 
 <div align="center">
 
-**你的 AI 面试助手**
+**你的求职瑞士军刀**
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -14,9 +14,9 @@
 
 ---
 
-## 🎯 什么是 InterviewAce？
+## 🎯 什么是 SwissJob？
 
-InterviewAce 是一个开源的、AI 驱动的面试管理平台，专为求职者设计。它帮助你组织求职申请、准备面试、追踪整个求职过程 - 一站式解决方案。
+SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯一需要的工具。就像瑞士军刀一样，它将求职过程中需要的所有功能整合到一个强大的工具中。
 
 ### ✨ 核心功能
 
@@ -41,8 +41,8 @@ InterviewAce 是一个开源的、AI 驱动的面试管理平台，专为求职�
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/yourusername/interviewace.git
-   cd interviewace
+   git clone https://github.com/yourusername/swissjob.git
+   cd swissjob
    ```
 
 2. **安装依赖**
@@ -127,7 +127,7 @@ InterviewAce 是一个开源的、AI 驱动的面试管理平台，专为求职�
 ## 📁 项目结构
 
 ```
-interviewace/
+swissjob/
 ├── frontend/              # Next.js 前端
 │   ├── app/              # App router 页面
 │   ├── components/       # React 组件

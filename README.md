@@ -1,8 +1,8 @@
-# InterviewAce
+# SwissJob
 
 <div align="center">
 
-**Your AI-Powered Interview Companion**
+**Your Swiss Army Knife for Job Hunting**
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -14,13 +14,13 @@
 
 ---
 
-## 🎯 What is InterviewAce?
+## 🎯 What is SwissJob?
 
-InterviewAce is an open-source, AI-powered interview management platform designed specifically for job seekers. It helps you organize job applications, prepare for interviews, and track your entire job search journey - all in one place.
+SwissJob is an open-source, AI-powered job search management platform - your all-in-one toolkit for landing your dream job. Just like a Swiss Army Knife, it combines everything you need for your job search journey into one powerful tool.
 
 ### ✨ Key Features
 
-- **🤖 AI-Powered Job Description Analysis**: Paste any JD and let AI automatically extract company name, position, and required skills
+- **🤖 AI-Powered JD Analysis**: Paste any job description and let AI automatically extract company name, position, and required skills
 - **💬 Conversational Interface**: Chat naturally with AI to add and refine job information
 - **📊 Pipeline Management**: Track applications through Pending → In Progress → Completed stages
 - **🎙️ Interview Recording & Transcription**: Record interviews and get AI-powered transcriptions (Whisper)
@@ -41,8 +41,8 @@ InterviewAce is an open-source, AI-powered interview management platform designe
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/interviewace.git
-   cd interviewace
+   git clone https://github.com/yourusername/swissjob.git
+   cd swissjob
    ```
 
 2. **Install dependencies**
@@ -127,7 +127,7 @@ InterviewAce is an open-source, AI-powered interview management platform designe
 ## 📁 Project Structure
 
 ```
-interviewace/
+swissjob/
 ├── frontend/              # Next.js frontend
 │   ├── app/              # App router pages
 │   ├── components/       # React components
