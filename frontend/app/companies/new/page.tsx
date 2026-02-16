@@ -7,25 +7,36 @@ import Link from 'next/link'
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  data?: {
+    company?: string
+    position?: string
+    skills?: string[]
+    jd?: string
+  }
 }
 
 export default function NewCompanyPage() {
   const router = useRouter()
-  const [input, setInput] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [isChatProcessing, setIsChatProcessing] = useState(false)
   const [extractedData, setExtractedData] = useState<{
     company?: string
     position?: string
     skills?: string[]
     jd?: string
   } | null>(null)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [chatInput, setChatInput] = useState('')
-  const [isChatProcessing, setIsChatProcessing] = useState(false)
+  const [isInitialSubmit, setIsInitialSubmit] = useState(true)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsProcessing(true)
+    if (!chatInput.trim()) return
+
+    const userMessage: ChatMessage = { role: 'user', content: chatInput }
+    setChatMessages([userMessage])
+    setChatInput('')
+    setIsChatProcessing(true)
+    setIsInitialSubmit(false)
 
     // Simulate AI processing
     setTimeout(() => {
@@ -34,38 +45,25 @@ export default function NewCompanyPage() {
         company: 'Google',
         position: 'Senior Software Engineer',
         skills: ['React', 'TypeScript', 'System Design'],
-        jd: input
+        jd: chatInput
       }
       setExtractedData(mockExtraction)
-      setIsProcessing(false)
-    }, 1500)
-  }
 
-  const handleConfirm = async () => {
-    try {
-      const response = await fetch('/api/companies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: extractedData?.company,
-          position: extractedData?.position,
-          jd: extractedData?.jd,
-          skills: extractedData?.skills
-        })
-      })
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: `I've analyzed the job description. Here's what I found:
 
-      if (response.ok) {
-        router.push('/companies')
-      } else {
-        const error = await response.json()
-        alert(`Failed to save: ${error.error}`)
+**Company:** ${mockExtraction.company}
+**Position:** ${mockExtraction.position}
+**Required Skills:** ${mockExtraction.skills.join(', ')}
+
+The full job description has been saved. Does this look correct? You can ask me to make any changes, or say "confirm" to save this position.`,
+        data: mockExtraction
       }
-    } catch (error) {
-      console.error('Error saving company:', error)
-      alert('Failed to save position. Please try again.')
-    }
+
+      setChatMessages(prev => [...prev, assistantMessage])
+      setIsChatProcessing(false)
+    }, 1500)
   }
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -74,52 +72,124 @@ export default function NewCompanyPage() {
 
     const userMessage: ChatMessage = { role: 'user', content: chatInput }
     setChatMessages(prev => [...prev, userMessage])
+    const userInput = chatInput.toLowerCase()
     setChatInput('')
     setIsChatProcessing(true)
 
-    // Simulate AI processing
+    // Check if user wants to confirm
+    if (userInput.includes('confirm') || userInput.includes('yes') || userInput.includes('correct') || userInput.includes('save')) {
+      // Save to backend
+      try {
+        const response = await fetch('/api/companies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: extractedData.company,
+            position: extractedData.position,
+            jd: extractedData.jd,
+            skills: extractedData.skills
+          })
+        })
+
+        if (response.ok) {
+          const assistantMessage: ChatMessage = {
+            role: 'assistant',
+            content: 'Perfect! The position has been saved successfully. Redirecting you to the positions list...'
+          }
+          setChatMessages(prev => [...prev, assistantMessage])
+          setIsChatProcessing(false)
+
+          setTimeout(() => {
+            router.push('/companies')
+          }, 1500)
+          return
+        } else {
+          const error = await response.json()
+          const assistantMessage: ChatMessage = {
+            role: 'assistant',
+            content: `Sorry, there was an error saving the position: ${error.error}. Please try again.`
+          }
+          setChatMessages(prev => [...prev, assistantMessage])
+          setIsChatProcessing(false)
+          return
+        }
+      } catch (error) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: 'Sorry, there was an error saving the position. Please try again.'
+        }
+        setChatMessages(prev => [...prev, assistantMessage])
+        setIsChatProcessing(false)
+        return
+      }
+    }
+
+    // Handle modifications
     setTimeout(() => {
-      const input = chatInput.toLowerCase()
       let response = ''
       const newData = { ...extractedData }
 
-      // Mock conversational editing logic
-      if (input.includes('change company') || input.includes('update company')) {
-        const match = input.match(/(?:change|update) company to (.+)/i)
+      if (userInput.includes('change company') || userInput.includes('update company')) {
+        const match = userInput.match(/(?:change|update) company to (.+)/i)
         if (match) {
           newData.company = match[1].trim()
-          response = `Got it! I've updated the company to ${newData.company}.`
+          response = `Got it! I've updated the company to **${newData.company}**.`
         }
-      } else if (input.includes('change position') || input.includes('update position')) {
-        const match = input.match(/(?:change|update) position to (.+)/i)
+      } else if (userInput.includes('change position') || userInput.includes('update position')) {
+        const match = userInput.match(/(?:change|update) position to (.+)/i)
         if (match) {
           newData.position = match[1].trim()
-          response = `Perfect! The position is now ${newData.position}.`
+          response = `Perfect! The position is now **${newData.position}**.`
         }
-      } else if (input.includes('add') && input.includes('skill')) {
-        const match = input.match(/add (.+?) (?:to )?skill/i) || input.match(/add (.+)/i)
+      } else if (userInput.includes('add') && userInput.includes('skill')) {
+        const match = userInput.match(/add (.+?) (?:to )?skill/i) || userInput.match(/add (.+)/i)
         if (match) {
           const skill = match[1].trim()
           if (!newData.skills?.includes(skill)) {
             newData.skills = [...(newData.skills || []), skill]
-            response = `Great! I've added ${skill} to the skills list.`
+            response = `Great! I've added **${skill}** to the skills list.`
           } else {
-            response = `${skill} is already in the skills list, so no changes needed.`
+            response = `**${skill}** is already in the skills list.`
           }
         }
-      } else if (input.includes('remove') && input.includes('skill')) {
-        const match = input.match(/remove (.+?) (?:from )?skill/i) || input.match(/remove (.+)/i)
+      } else if (userInput.includes('remove') && userInput.includes('skill')) {
+        const match = userInput.match(/remove (.+?) (?:from )?skill/i) || userInput.match(/remove (.+)/i)
         if (match) {
           const skill = match[1].trim()
           newData.skills = newData.skills?.filter(s => s.toLowerCase() !== skill.toLowerCase())
-          response = `Done! I've removed ${skill} from the skills list.`
+          response = `Done! I've removed **${skill}** from the skills list.`
         }
       } else {
-        response = "I'm here to help you refine the extracted information! You can ask me to:\n\n• Change the company name (e.g., 'Change company to Meta')\n• Update the position (e.g., 'Update position to Staff Engineer')\n• Add skills (e.g., 'Add Python to skills')\n• Remove skills (e.g., 'Remove React from skills')\n\nWhat would you like to adjust?"
+        response = `I can help you refine the information. You can:
+
+• Change the company name (e.g., "Change company to Meta")
+• Update the position (e.g., "Update position to Staff Engineer")
+• Add skills (e.g., "Add Python to skills")
+• Remove skills (e.g., "Remove React from skills")
+• Say "confirm" or "save" when everything looks good
+
+What would you like to adjust?`
       }
 
       setExtractedData(newData)
-      const assistantMessage: ChatMessage = { role: 'assistant', content: response }
+
+      // Add summary if data was changed
+      if (response && !response.includes('can help you refine')) {
+        response += `\n\nCurrent information:
+**Company:** ${newData.company}
+**Position:** ${newData.position}
+**Skills:** ${newData.skills?.join(', ')}
+
+Say "confirm" to save, or ask for more changes.`
+      }
+
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: response,
+        data: newData
+      }
       setChatMessages(prev => [...prev, assistantMessage])
       setIsChatProcessing(false)
     }, 800)
@@ -127,173 +197,101 @@ export default function NewCompanyPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link href="/companies" className="text-blue-600 hover:underline mb-4 inline-block">
             ← Back to Positions
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Add New Position</h1>
-          <p className="text-gray-600 mt-2">Paste the job description and let AI extract the details</p>
+          <p className="text-gray-600 mt-2">Chat with AI to add a job position</p>
         </div>
 
-        {/* AI Input Form */}
-        {!extractedData ? (
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Description
-                </label>
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Paste the entire job description here...
-
-Example:
-Google is hiring a Senior Software Engineer for our Cloud Platform team.
-Requirements: 5+ years experience with React, TypeScript, and distributed systems..."
-                  required
-                />
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Tip:</strong> Just paste the job description. AI will automatically extract:
-                </p>
-                <ul className="text-sm text-blue-700 mt-2 ml-6 list-disc">
-                  <li>Company name</li>
-                  <li>Position title</li>
-                  <li>Required skills</li>
-                  <li>Key requirements</li>
-                </ul>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isProcessing || !input.trim()}
-              className="w-full mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        {/* Chat Container */}
+        <div className="bg-white rounded-lg shadow">
+          {/* Chat Messages */}
+          <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+            {chatMessages.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
-                  Analyzing with AI...
-                </span>
+                </div>
+                <p className="text-gray-600 text-lg mb-2">Start by pasting the job description</p>
+                <p className="text-gray-500 text-sm">I'll extract the company, position, and required skills for you</p>
+              </div>
+            )}
+
+            {chatMessages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-line" style={{ wordBreak: 'break-word' }}>
+                    {message.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {isChatProcessing && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chat Input */}
+          <div className="border-t border-gray-200 p-4">
+            <form onSubmit={isInitialSubmit ? handleInitialSubmit : handleChatSubmit} className="flex gap-2">
+              {isInitialSubmit ? (
+                <textarea
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Paste the job description here..."
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={3}
+                  disabled={isChatProcessing}
+                />
               ) : (
-                'Extract Information'
-              )}
-            </button>
-          </form>
-        ) : (
-          /* Extracted Data Review */
-          <div className="bg-white rounded-lg shadow p-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Review Extracted Information</h2>
-              <p className="text-gray-600">Confirm the details before saving</p>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="border border-gray-200 rounded-lg p-4">
-                <label className="text-sm font-medium text-gray-600">Company</label>
-                <p className="text-lg font-semibold text-gray-900 mt-1">{extractedData.company}</p>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg p-4">
-                <label className="text-sm font-medium text-gray-600">Position</label>
-                <p className="text-lg font-semibold text-gray-900 mt-1">{extractedData.position}</p>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg p-4">
-                <label className="text-sm font-medium text-gray-600">Skills Required</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {extractedData.skills?.map((skill) => (
-                    <span key={skill} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg p-4">
-                <label className="text-sm font-medium text-gray-600">Full Job Description</label>
-                <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                  {extractedData.jd}
-                </p>
-              </div>
-            </div>
-
-            {/* Chat Interface */}
-            <div className="mt-8 border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Refine with Chat</h3>
-
-              {/* Chat History */}
-              {chatMessages.length > 0 && (
-                <div className="mb-4 space-y-3 max-h-64 overflow-y-auto">
-                  {chatMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-line">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Chat Input */}
-              <form onSubmit={handleChatSubmit} className="flex gap-2">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask me to make changes, like 'Change company to Meta' or 'Add Python'"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ask me to make changes, or say 'confirm' to save..."
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isChatProcessing}
                 />
-                <button
-                  type="submit"
-                  disabled={isChatProcessing || !chatInput.trim()}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isChatProcessing ? 'Sending...' : 'Send'}
-                </button>
-              </form>
-
-              <p className="text-xs text-gray-500 mt-2">
-                Feel free to ask naturally - I'll understand what you want to change!
-              </p>
-            </div>
-
-            <div className="flex gap-4 mt-8">
+              )}
               <button
-                onClick={handleConfirm}
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+                type="submit"
+                disabled={isChatProcessing || !chatInput.trim()}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
-                Confirm & Save
+                {isChatProcessing ? 'Processing...' : isInitialSubmit ? 'Analyze' : 'Send'}
               </button>
-              <button
-                onClick={() => setExtractedData(null)}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                Edit
-              </button>
-            </div>
+            </form>
+            <p className="text-xs text-gray-500 mt-2">
+              {isInitialSubmit
+                ? 'Paste the full job description and I\'ll extract the key information'
+                : 'Chat naturally - I\'ll understand what you want to change'}
+            </p>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
