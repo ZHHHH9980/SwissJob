@@ -10,9 +10,5 @@
     "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
     "start": "npm run start --workspace=frontend"
-  },
-  "dependencies": {
-    "openai": "^6.22.0",
-    "pdf-parse": "^2.4.5"
   }
 }
