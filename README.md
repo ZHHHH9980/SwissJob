@@ -152,23 +152,6 @@ For local mode setup, see [scripts/README.md](scripts/README.md).
 - **Anthropic API** - Claude for conversations
 - User provides their own API keys (privacy-first)
 
-## 📁 Project Structure
-
-```
-swissjob/
-├── frontend/              # Next.js application
-│   ├── app/              # App router pages & API routes
-│   ├── components/       # React components
-│   ├── lib/              # Utilities
-│   └── prisma/           # Database schema
-├── scripts/              # Optional local Whisper server
-├── data/                 # Local data storage
-│   ├── audio/           # Interview recordings
-│   ├── resumes/         # Uploaded resumes
-│   └── interview.db     # SQLite database
-└── docs/                # Documentation
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! Whether it's:
@@ -183,15 +166,6 @@ Please feel free to open an issue or submit a pull request.
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Next.js](https://nextjs.org/)
-- AI capabilities from [OpenAI](https://openai.com/) and [Anthropic](https://anthropic.com/)
-
-## 📧 Contact
-
-Have questions or suggestions? Open an issue or reach out!
 
 ---
 

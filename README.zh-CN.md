@@ -152,23 +152,6 @@ WHISPER_API_URL=http://localhost:9000
 - **Anthropic API** - Claude 用于对话
 - 用户提供自己的 API 密钥（隐私优先）
 
-## 📁 项目结构
-
-```
-swissjob/
-├── frontend/              # Next.js 应用
-│   ├── app/              # App router 页面和 API 路由
-│   ├── components/       # React 组件
-│   ├── lib/              # 工具函数
-│   └── prisma/           # 数据库模式
-├── scripts/              # 可选的本地 Whisper 服务
-├── data/                 # 本地数据存储
-│   ├── audio/           # 面试录音
-│   ├── resumes/         # 上传的简历
-│   └── interview.db     # SQLite 数据库
-└── docs/                # 文档
-```
-
 ## 🤝 贡献
 
 欢迎贡献！无论是：
@@ -183,15 +166,6 @@ swissjob/
 ## 📝 开源协议
 
 本项目采用 MIT 协议 - 详见 [LICENSE](LICENSE) 文件。
-
-## 🙏 致谢
-
-- 使用 [Next.js](https://nextjs.org/) 构建
-- AI 能力来自 [OpenAI](https://openai.com/) 和 [Anthropic](https://anthropic.com/)
-
-## 📧 联系方式
-
-有问题或建议？欢迎提交 issue 或联系我们！
 
 ---
 
