@@ -1,95 +1,177 @@
-# Interview Helper
+# InterviewAce
 
-An open-source interview management tool designed to help job seekers organize, prepare for, and track their job interviews.
+<div align="center">
 
-## Features
+**Your AI-Powered Interview Companion**
 
-- **Interview Management**: Track all your upcoming and past interviews in one place
-- **Company Research**: Store and organize research about companies you're interviewing with
-- **Audio Transcription**: Record and transcribe interview sessions using Whisper AI
-- **Document Processing**: Upload and extract information from job descriptions and company materials
-- **Preparation Tools**: Create and manage interview preparation notes and questions
-- **Progress Tracking**: Monitor your interview pipeline and application status
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-## Tech Stack
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com/)
 
-### Frontend
-- **Next.js 14**: React framework for production
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first styling
-- **Prisma**: Database ORM
+</div>
 
-### Backend
-- **FastAPI**: Modern Python web framework
-- **Uvicorn**: ASGI server
-- **Faster Whisper**: Audio transcription
-- **PDFPlumber**: PDF document processing
+---
 
-## Installation
+## 🎯 What is InterviewAce?
+
+InterviewAce is an open-source, AI-powered interview management platform designed specifically for job seekers. It helps you organize job applications, prepare for interviews, and track your entire job search journey - all in one place.
+
+### ✨ Key Features
+
+- **🤖 AI-Powered Job Description Analysis**: Paste any JD and let AI automatically extract company name, position, and required skills
+- **💬 Conversational Interface**: Chat naturally with AI to add and refine job information
+- **📊 Pipeline Management**: Track applications through Pending → In Progress → Completed stages
+- **🎙️ Interview Recording & Transcription**: Record interviews and get AI-powered transcriptions (Whisper)
+- **📄 Resume Analysis**: Upload your resume and get AI-powered skill matching
+- **🎯 Mock Interview Generator**: Generate tailored interview questions based on JD and your resume
+- **📈 Skill Tree Visualization**: Visualize your skills and track growth over time
+- **📅 Calendar Integration**: Export interview schedules to your calendar
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Python 3.11+ (Python 3.13 has compatibility issues with some audio libraries)
-- FFmpeg (for audio processing): `brew install ffmpeg`
 
-### Setup
+- **Node.js** 18+ and npm
+- **Python** 3.11+ (Note: Python 3.13 has compatibility issues with audio libraries)
+- **FFmpeg** (for audio processing): `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
 
-1. Clone the repository
+### Installation
 
-2. Install dependencies:
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/interviewace.git
+   cd interviewace
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. Set up Python virtual environment and install backend dependencies:
+3. **Set up Python environment**
    ```bash
    cd backend
    python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  # Windows: venv\Scripts\activate
    pip install -r requirements.txt
    cd ..
    ```
 
-   **Note**: If you encounter issues installing `faster-whisper` on Python 3.13, you can:
-   - Use Python 3.11 or 3.12 instead, OR
-   - Skip Whisper for now and install other dependencies manually:
-     ```bash
-     pip install fastapi uvicorn python-multipart pdfplumber httpx python-dotenv
-     ```
-
-4. Configure environment variables:
+4. **Configure environment variables**
    ```bash
    cp backend/.env.example backend/.env
-   # Edit backend/.env and add your API keys
+   # Edit backend/.env and add your API keys (OpenAI, Anthropic, etc.)
    ```
 
-## Usage
+5. **Initialize database**
+   ```bash
+   cd frontend
+   npx prisma generate
+   npx prisma db push
+   cd ..
+   ```
 
-Start both frontend and backend servers:
-```bash
-npm start
+6. **Start the application**
+   ```bash
+   npm start
+   ```
+
+   This will launch:
+   - 🎨 Frontend: http://localhost:3000
+   - ⚡ Backend API: http://localhost:8000
+
+## 📖 Usage
+
+### Adding a Job Position
+
+1. Click **"+ Add Position"** on the dashboard
+2. Paste the complete job description
+3. AI will extract company, position, and skills
+4. Review and confirm or make adjustments via chat
+5. Click **"Confirm & Save"**
+
+### Managing Your Pipeline
+
+- **Pending**: Newly added positions you're considering
+- **In Progress**: Active applications and scheduled interviews
+- **Completed**: Finished interviews (accepted, rejected, or withdrawn)
+
+### Recording Interviews
+
+1. Navigate to a company's detail page
+2. Click **"Schedule Interview"**
+3. Upload audio recording after the interview
+4. Get AI-powered transcription and analysis
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Prisma** - Type-safe database ORM
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **Faster-Whisper** - Local audio transcription
+- **PDFPlumber** - Resume parsing
+- **SQLite** - Lightweight database
+
+### AI Integration
+- **OpenAI API** - GPT-4 for analysis
+- **Anthropic API** - Claude for conversations
+- User provides their own API keys (privacy-first)
+
+## 📁 Project Structure
+
+```
+interviewace/
+├── frontend/              # Next.js frontend
+│   ├── app/              # App router pages
+│   ├── components/       # React components
+│   ├── lib/              # Utilities
+│   └── prisma/           # Database schema
+├── backend/              # FastAPI backend
+│   ├── services/         # Business logic
+│   ├── models/           # Data models
+│   └── main.py           # API entry point
+├── data/                 # Local data storage
+│   ├── audio/           # Interview recordings
+│   ├── resumes/         # Uploaded resumes
+│   └── interview.db     # SQLite database
+└── docs/                # Documentation
 ```
 
-This will run:
-- Backend API on `http://localhost:8000`
-- Frontend application on `http://localhost:3000`
+## 🤝 Contributing
 
-### Individual Commands
+Contributions are welcome! Whether it's:
 
-Start only the frontend:
-```bash
-npm run start:frontend
-```
+- 🐛 Bug reports
+- 💡 Feature suggestions
+- 📝 Documentation improvements
+- 🔧 Code contributions
 
-Start only the backend:
-```bash
-npm run start:backend
-```
+Please feel free to open an issue or submit a pull request.
 
-## Development
+## 📝 License
 
-This is an open-source tool built for job seekers to better manage their interview process. Contributions are welcome!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## License
+## 🙏 Acknowledgments
 
-Open Source - Free to use for personal and commercial purposes.
+- Built with [Next.js](https://nextjs.org/)
+- Powered by [FastAPI](https://fastapi.tiangolo.com/)
+- Transcription by [Faster-Whisper](https://github.com/guillaumekln/faster-whisper)
+- AI capabilities from [OpenAI](https://openai.com/) and [Anthropic](https://anthropic.com/)
+
+## 📧 Contact
+
+Have questions or suggestions? Open an issue or reach out!
+
+---
+
+<div align="center">
+Made with ❤️ for job seekers everywhere
+</div>

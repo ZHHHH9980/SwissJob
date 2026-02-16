@@ -1,6 +1,7 @@
 {
-  "name": "interview-helper",
+  "name": "interviewace",
   "version": "0.1.0",
+  "description": "Your AI-Powered Interview Companion - Open-source interview management platform for job seekers",
   "private": true,
   "workspaces": [
     "frontend"
