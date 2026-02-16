@@ -8,7 +8,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com/)
 
 </div>
 
@@ -31,18 +30,61 @@ SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯�
 
 ## 🚀 快速开始
 
+### 一键安装
+
+```bash
+git clone https://github.com/ZHHHH9980/SwissJob.git
+cd SwissJob
+./setup.sh
+```
+
+就这么简单！脚本会自动：
+- ✅ 安装所有依赖
+- ✅ 初始化数据库
+- ✅ 创建配置文件
+
+然后启动应用：
+```bash
+npm run dev
+```
+
+访问 http://localhost:3000 开始使用 SwissJob！
+
 ### 前置要求
 
 - **Node.js** 18+ 和 npm
-- **Python** 3.11+（注意：Python 3.13 与某些音频库存在兼容性问题）
-- **FFmpeg**（用于音频处理）：`brew install ffmpeg`（macOS）或 `apt install ffmpeg`（Linux）
 
-### 安装步骤
+### Whisper 转写功能（可选）
+
+SwissJob 支持三种面试转写模式：
+
+1. **None**（默认）：禁用转写功能
+2. **OpenAI API**：使用 OpenAI 的 Whisper API（需要 API 密钥）
+3. **Local**：本地运行 Whisper（免费，但需要 Python 环境）
+
+要启用转写功能，编辑你的 `.env` 文件：
+
+```bash
+# OpenAI API 模式
+WHISPER_MODE=api
+OPENAI_API_KEY=your_key_here
+
+# 本地模式
+WHISPER_MODE=local
+WHISPER_API_URL=http://localhost:9000
+```
+
+本地模式设置请参考 [scripts/README.md](scripts/README.md)。
+
+### 手动安装
+
+<details>
+<summary>点击展开手动安装步骤</summary>
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/yourusername/swissjob.git
-   cd swissjob
+   git clone https://github.com/ZHHHH9980/SwissJob.git
+   cd SwissJob
    ```
 
 2. **安装依赖**
@@ -50,22 +92,13 @@ SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯�
    npm install
    ```
 
-3. **设置 Python 环境**
+3. **配置环境变量**
    ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   cd ..
+   cp .env.example .env
+   # 编辑 .env 并添加你的 API 密钥（OpenAI、Anthropic 等）
    ```
 
-4. **配置环境变量**
-   ```bash
-   cp backend/.env.example backend/.env
-   # 编辑 backend/.env 并添加你的 API 密钥（OpenAI、Anthropic 等）
-   ```
-
-5. **初始化数据库**
+4. **初始化数据库**
    ```bash
    cd frontend
    npx prisma generate
@@ -73,14 +106,14 @@ SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯�
    cd ..
    ```
 
-6. **启动应用**
+5. **启动应用**
    ```bash
-   npm start
+   npm run dev
    ```
 
-   这将启动：
-   - 🎨 前端：http://localhost:3000
-   - ⚡ 后端 API：http://localhost:8000
+   访问 http://localhost:3000
+
+</details>
 
 ## 📖 使用指南
 
@@ -112,15 +145,10 @@ SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯�
 - **TypeScript** - 类型安全开发
 - **Tailwind CSS** - 实用优先的样式框架
 - **Prisma** - 类型安全的数据库 ORM
-
-### 后端
-- **FastAPI** - 现代 Python Web 框架
-- **Faster-Whisper** - 本地音频转写
-- **PDFPlumber** - 简历解析
 - **SQLite** - 轻量级数据库
 
 ### AI 集成
-- **OpenAI API** - GPT-4 用于分析
+- **OpenAI API** - GPT-4 用于分析，Whisper 用于转写
 - **Anthropic API** - Claude 用于对话
 - 用户提供自己的 API 密钥（隐私优先）
 
@@ -128,15 +156,12 @@ SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯�
 
 ```
 swissjob/
-├── frontend/              # Next.js 前端
-│   ├── app/              # App router 页面
+├── frontend/              # Next.js 应用
+│   ├── app/              # App router 页面和 API 路由
 │   ├── components/       # React 组件
 │   ├── lib/              # 工具函数
 │   └── prisma/           # 数据库模式
-├── backend/              # FastAPI 后端
-│   ├── services/         # 业务逻辑
-│   ├── models/           # 数据模型
-│   └── main.py           # API 入口
+├── scripts/              # 可选的本地 Whisper 服务
 ├── data/                 # 本地数据存储
 │   ├── audio/           # 面试录音
 │   ├── resumes/         # 上传的简历
@@ -162,8 +187,6 @@ swissjob/
 ## 🙏 致谢
 
 - 使用 [Next.js](https://nextjs.org/) 构建
-- 由 [FastAPI](https://fastapi.tiangolo.com/) 驱动
-- 转写功能由 [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) 提供
 - AI 能力来自 [OpenAI](https://openai.com/) 和 [Anthropic](https://anthropic.com/)
 
 ## 📧 联系方式

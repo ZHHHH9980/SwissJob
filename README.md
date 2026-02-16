@@ -8,7 +8,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com/)
 
 </div>
 
@@ -31,18 +30,61 @@ SwissJob is an open-source, AI-powered job search management platform - your all
 
 ## 🚀 Quick Start
 
+### One-Command Setup
+
+```bash
+git clone https://github.com/ZHHHH9980/SwissJob.git
+cd SwissJob
+./setup.sh
+```
+
+That's it! The script will automatically:
+- ✅ Install all dependencies
+- ✅ Initialize the database
+- ✅ Create configuration files
+
+Then start the app:
+```bash
+npm run dev
+```
+
+Visit http://localhost:3000 to start using SwissJob!
+
 ### Prerequisites
 
 - **Node.js** 18+ and npm
-- **Python** 3.11+ (Note: Python 3.13 has compatibility issues with audio libraries)
-- **FFmpeg** (for audio processing): `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
 
-### Installation
+### Whisper Transcription (Optional)
+
+SwissJob supports three modes for interview transcription:
+
+1. **None** (default): Transcription disabled
+2. **OpenAI API**: Use OpenAI's Whisper API (requires API key)
+3. **Local**: Run Whisper locally (free, but requires Python setup)
+
+To enable transcription, edit your `.env` file:
+
+```bash
+# For OpenAI API mode
+WHISPER_MODE=api
+OPENAI_API_KEY=your_key_here
+
+# For local mode
+WHISPER_MODE=local
+WHISPER_API_URL=http://localhost:9000
+```
+
+For local mode setup, see [scripts/README.md](scripts/README.md).
+
+### Manual Installation
+
+<details>
+<summary>Click to expand manual installation steps</summary>
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/swissjob.git
-   cd swissjob
+   git clone https://github.com/ZHHHH9980/SwissJob.git
+   cd SwissJob
    ```
 
 2. **Install dependencies**
@@ -50,22 +92,13 @@ SwissJob is an open-source, AI-powered job search management platform - your all
    npm install
    ```
 
-3. **Set up Python environment**
+3. **Configure environment variables**
    ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   cd ..
+   cp .env.example .env
+   # Edit .env and add your API keys (OpenAI, Anthropic, etc.)
    ```
 
-4. **Configure environment variables**
-   ```bash
-   cp backend/.env.example backend/.env
-   # Edit backend/.env and add your API keys (OpenAI, Anthropic, etc.)
-   ```
-
-5. **Initialize database**
+4. **Initialize database**
    ```bash
    cd frontend
    npx prisma generate
@@ -73,14 +106,14 @@ SwissJob is an open-source, AI-powered job search management platform - your all
    cd ..
    ```
 
-6. **Start the application**
+5. **Start the application**
    ```bash
-   npm start
+   npm run dev
    ```
 
-   This will launch:
-   - 🎨 Frontend: http://localhost:3000
-   - ⚡ Backend API: http://localhost:8000
+   Visit http://localhost:3000
+
+</details>
 
 ## 📖 Usage
 
@@ -112,15 +145,10 @@ SwissJob is an open-source, AI-powered job search management platform - your all
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
 - **Prisma** - Type-safe database ORM
-
-### Backend
-- **FastAPI** - Modern Python web framework
-- **Faster-Whisper** - Local audio transcription
-- **PDFPlumber** - Resume parsing
 - **SQLite** - Lightweight database
 
 ### AI Integration
-- **OpenAI API** - GPT-4 for analysis
+- **OpenAI API** - GPT-4 for analysis and Whisper for transcription
 - **Anthropic API** - Claude for conversations
 - User provides their own API keys (privacy-first)
 
@@ -128,15 +156,12 @@ SwissJob is an open-source, AI-powered job search management platform - your all
 
 ```
 swissjob/
-├── frontend/              # Next.js frontend
-│   ├── app/              # App router pages
+├── frontend/              # Next.js application
+│   ├── app/              # App router pages & API routes
 │   ├── components/       # React components
 │   ├── lib/              # Utilities
 │   └── prisma/           # Database schema
-├── backend/              # FastAPI backend
-│   ├── services/         # Business logic
-│   ├── models/           # Data models
-│   └── main.py           # API entry point
+├── scripts/              # Optional local Whisper server
 ├── data/                 # Local data storage
 │   ├── audio/           # Interview recordings
 │   ├── resumes/         # Uploaded resumes
@@ -162,8 +187,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
-- Powered by [FastAPI](https://fastapi.tiangolo.com/)
-- Transcription by [Faster-Whisper](https://github.com/guillaumekln/faster-whisper)
 - AI capabilities from [OpenAI](https://openai.com/) and [Anthropic](https://anthropic.com/)
 
 ## 📧 Contact
