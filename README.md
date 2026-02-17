@@ -1,8 +1,8 @@
-# SwissJob
-
 <div align="center">
 
 <img src="./assets/logo.png" alt="SwissJob Logo" width="400"/>
+
+# SwissJob
 
 **Your Swiss Army Knife for Job Hunting**
 
@@ -11,15 +11,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 
-</div>
-
 ---
 
-## 🎯 What is SwissJob?
+An open-source, AI-powered job search management platform - your all-in-one toolkit for landing your dream job. Just like a Swiss Army Knife, it combines everything you need for your job search journey into one powerful tool.
 
-SwissJob is an open-source, AI-powered job search management platform - your all-in-one toolkit for landing your dream job. Just like a Swiss Army Knife, it combines everything you need for your job search journey into one powerful tool.
+</div>
 
-### ✨ Key Features
+## ✨ Key Features
 
 - **🤖 AI-Powered JD Analysis**: Paste any job description and let AI automatically extract company name, position, and required skills
 - **💬 Conversational Interface**: Chat naturally with AI to add and refine job information

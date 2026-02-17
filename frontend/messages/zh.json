@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "SwissJob",
+    "loading": "加载中..."
+  },
+  "nav": {
+    "jobApplications": "职位申请",
+    "skillTree": "技能树",
+    "resume": "简历"
+  },
+  "companies": {
+    "title": "职位申请",
+    "totalPositions": "共 {count} 个职位",
+    "addPosition": "添加职位",
+    "pending": "待处理",
+    "inProgress": "进行中",
+    "completed": "已完成",
+    "noPending": "暂无待处理职位",
+    "noInProgress": "暂无进行中职位",
+    "noCompleted": "暂无已完成职位",
+    "matchScore": "{score}% 匹配",
+    "deleteTitle": "删除职位",
+    "deleteMessage": "确定要删除这个职位吗？此操作无法撤销。",
+    "delete": "删除",
+    "cancel": "取消",
+    "deleting": "删除中..."
+  },
+  "addPosition": {
+    "title": "添加新职位",
+    "subtitle": "与 AI 对话添加职位",
+    "backToPositions": "返回职位列表",
+    "startMessage": "从粘贴职位描述开始",
+    "startHint": "我会为你提取公司、职位和所需技能",
+    "placeholder": "在此粘贴职位描述...",
+    "analyze": "分析",
+    "processing": "处理中...",
+    "send": "发送",
+    "askChanges": "告诉我需要修改什么...",
+    "company": "公司",
+    "position": "职位",
+    "requiredSkills": "所需技能",
+    "fullJD": "完整职位描述",
+    "showMore": "显示更多",
+    "showLess": "显示更少",
+    "confirmSave": "确认并保存",
+    "saving": "保存中...",
+    "edit": "编辑"
+  }
+}

@@ -1,8 +1,8 @@
-# SwissJob
-
 <div align="center">
 
 <img src="./assets/logo.png" alt="SwissJob Logo" width="400"/>
+
+# SwissJob
 
 **你的求职瑞士军刀**
 
@@ -11,15 +11,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 
-</div>
-
 ---
 
-## 🎯 什么是 SwissJob？
+一个开源的、AI 驱动的求职管理平台 - 你找工作唯一需要的工具。就像瑞士军刀一样，它将求职过程中需要的所有功能整合到一个强大的工具中。
 
-SwissJob 是一个开源的、AI 驱动的求职管理平台 - 你找工作唯一需要的工具。就像瑞士军刀一样，它将求职过程中需要的所有功能整合到一个强大的工具中。
+</div>
 
-### ✨ 核心功能
+## ✨ 核心功能
 
 - **🤖 AI 智能解析职位描述**：粘贴任何 JD，AI 自动提取公司名称、职位和所需技能
 - **💬 对话式交互界面**：与 AI 自然对话，添加和完善职位信息

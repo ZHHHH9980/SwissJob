@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "SwissJob",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "jobApplications": "Job Applications",
+    "skillTree": "Skill Tree",
+    "resume": "Resume"
+  },
+  "companies": {
+    "title": "Job Applications",
+    "totalPositions": "{count} total positions",
+    "addPosition": "Add Position",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "noPending": "No pending positions",
+    "noInProgress": "No positions in progress",
+    "noCompleted": "No completed positions",
+    "matchScore": "{score}% Match",
+    "deleteTitle": "Delete Position",
+    "deleteMessage": "Are you sure you want to delete this position? This action cannot be undone.",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "deleting": "Deleting..."
+  },
+  "addPosition": {
+    "title": "Add New Position",
+    "subtitle": "Chat with AI to add a job position",
+    "backToPositions": "Back to Positions",
+    "startMessage": "Start by pasting the job description",
+    "startHint": "I'll extract the company, position, and required skills for you",
+    "placeholder": "Paste the job description here...",
+    "analyze": "Analyze",
+    "processing": "Processing...",
+    "send": "Send",
+    "askChanges": "Ask me to make changes...",
+    "company": "Company",
+    "position": "Position",
+    "requiredSkills": "Required Skills",
+    "fullJD": "Full Job Description",
+    "showMore": "Show More",
+    "showLess": "Show Less",
+    "confirmSave": "Confirm & Save",
+    "saving": "Saving...",
+    "edit": "Edit"
+  }
+}
