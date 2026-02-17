@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./assets/logo.png" alt="SwissJob Logo" width="400"/>
-
 # SwissJob
+
+<img src="./assets/logo.png" alt="SwissJob Logo" width="400"/>
 
 **Your Swiss Army Knife for Job Hunting**
 
