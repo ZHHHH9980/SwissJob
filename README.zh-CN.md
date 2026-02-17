@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="./assets/logo.png" alt="SwissJob Logo" width="400"/>
+
 **你的求职瑞士军刀**
 
 [English](README.md) | [简体中文](README.zh-CN.md)
