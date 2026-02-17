@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -70,7 +71,8 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 space-y-3">
+        <LanguageSwitcher />
         <div className="text-xs text-gray-500 text-center">
           SwissJob v1.0
         </div>

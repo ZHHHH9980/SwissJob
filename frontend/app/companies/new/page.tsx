@@ -197,10 +197,10 @@ What would you like to adjust?`
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="h-screen bg-gray-50 flex flex-col">
+      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 flex-shrink-0">
           <Link href="/companies" className="text-blue-600 hover:underline mb-4 inline-block">
             ← Back to Positions
           </Link>
@@ -209,9 +209,9 @@ What would you like to adjust?`
         </div>
 
         {/* Chat Container */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow flex-1 flex flex-col overflow-hidden">
           {/* Chat Messages */}
-          <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {chatMessages.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
@@ -232,17 +232,17 @@ What would you like to adjust?`
                 <div
                   className={`max-w-[85%] rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-blue-600 text-white px-4 py-3'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line px-4 py-3" style={{ wordBreak: 'break-word' }}>
+                  <p className="text-sm whitespace-pre-line px-4 py-3 leading-relaxed" style={{ wordBreak: 'break-word' }}>
                     {message.content}
                   </p>
 
                   {/* Show extracted data with confirm button */}
                   {message.showConfirmation && message.data && (
-                    <div className="mt-3 space-y-3 px-4 pb-3">
+                    <div className="mt-3 space-y-4 px-4 pb-3">
                       <div className="border border-gray-200 rounded-lg p-3 bg-white">
                         <div className="text-xs text-gray-500 mb-1">Company</div>
                         <div className="font-semibold text-gray-900">{message.data.company}</div>

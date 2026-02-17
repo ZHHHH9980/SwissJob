@@ -31,7 +31,12 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(lsof:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(xargs:*)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(git remote:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
