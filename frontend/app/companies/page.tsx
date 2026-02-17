@@ -15,10 +15,13 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCenter,
+  DragOverEvent,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useDroppable } from '@dnd-kit/core'
 
 interface Company {
   id: string
@@ -130,10 +133,8 @@ export default function CompaniesPage() {
     setActiveId(event.active.id as string)
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event
-    setActiveId(null)
-
     if (!over) return
 
     const activeCompany = companies.find(c => c.id === active.id)
@@ -141,13 +142,104 @@ export default function CompaniesPage() {
 
     // Determine new status based on drop zone
     let newStatus: Company['status'] | null = null
-    if (over.id === 'pending-zone') newStatus = 'pending'
-    else if (over.id === 'in-progress-zone') newStatus = 'in-progress'
-    else if (over.id === 'completed-zone') newStatus = 'completed'
+    const overId = over.id as string
+
+    if (overId === 'pending-droppable' || pendingCompanies.some(c => c.id === overId)) {
+      newStatus = 'pending'
+    } else if (overId === 'in-progress-droppable' || inProgressCompanies.some(c => c.id === overId)) {
+      newStatus = 'in-progress'
+    } else if (overId === 'completed-droppable' || completedCompanies.some(c => c.id === overId)) {
+      newStatus = 'completed'
+    }
 
     if (newStatus && newStatus !== activeCompany.status) {
-      handleStatusChange(activeCompany.id, newStatus, {} as any)
+      // Optimistically update UI
+      setCompanies(companies.map(c =>
+        c.id === activeCompany.id ? { ...c, status: newStatus } : c
+      ))
     }
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active } = event
+    setActiveId(null)
+
+    const activeCompany = companies.find(c => c.id === active.id)
+    if (!activeCompany) return
+
+    // Persist to backend
+    try {
+      await fetch(`/api/companies/${activeCompany.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: activeCompany.status })
+      })
+    } catch (error) {
+      console.error('Error updating status:', error)
+      // Revert on error
+      fetchCompanies()
+    }
+  }
+
+  const DroppableColumn = ({
+    id,
+    children,
+    title,
+    count,
+    color
+  }: {
+    id: string
+    children: React.ReactNode
+    title: string
+    count: number
+    color: 'blue' | 'yellow' | 'green'
+  }) => {
+    const { setNodeRef, isOver } = useDroppable({ id })
+
+    const colorClasses = {
+      blue: {
+        header: 'bg-blue-50 border-blue-500',
+        badge: 'bg-blue-100 text-blue-800',
+        dot: 'bg-blue-500',
+        highlight: 'ring-2 ring-blue-400'
+      },
+      yellow: {
+        header: 'bg-yellow-50 border-yellow-500',
+        badge: 'bg-yellow-100 text-yellow-800',
+        dot: 'bg-yellow-500',
+        highlight: 'ring-2 ring-yellow-400'
+      },
+      green: {
+        header: 'bg-green-50 border-green-500',
+        badge: 'bg-green-100 text-green-800',
+        dot: 'bg-green-500',
+        highlight: 'ring-2 ring-green-400'
+      }
+    }
+
+    const colors = colorClasses[color]
+
+    return (
+      <div className="flex flex-col">
+        <div className={`${colors.header} rounded-t-lg px-4 py-3 border-b-2`}>
+          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+            <span className={`w-3 h-3 rounded-full ${colors.dot}`}></span>
+            {title}
+            <span className={`ml-auto ${colors.badge} text-xs px-2 py-1 rounded-full`}>
+              {count}
+            </span>
+          </h2>
+        </div>
+        <div
+          ref={setNodeRef}
+          className={`flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4 transition-all ${
+            isOver ? colors.highlight : ''
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    )
   }
 
   const DraggableCompanyCard = ({ company }: { company: Company }) => {
@@ -285,75 +377,59 @@ export default function CompaniesPage() {
           {/* Kanban Board - 3 Columns */}
           <DndContext
             sensors={sensors}
+            collisionDetection={closestCenter}
             onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
             <div className="grid grid-cols-3 gap-6 h-[calc(100vh-200px)]">
               {/* Pending Column */}
-              <div className="flex flex-col">
-                <div className="bg-blue-50 rounded-t-lg px-4 py-3 border-b-2 border-blue-500">
-                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                    Pending
-                    <span className="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      {pendingCompanies.length}
-                    </span>
-                  </h2>
-                </div>
+              <DroppableColumn
+                id="pending-droppable"
+                title="Pending"
+                count={pendingCompanies.length}
+                color="blue"
+              >
                 <SortableContext items={pendingCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div id="pending-zone" className="flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4">
-                    {pendingCompanies.length === 0 ? (
-                      <p className="text-gray-500 text-sm text-center py-8">No pending positions</p>
-                    ) : (
-                      pendingCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                    )}
-                  </div>
+                  {pendingCompanies.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-8">No pending positions</p>
+                  ) : (
+                    pendingCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
+                  )}
                 </SortableContext>
-              </div>
+              </DroppableColumn>
 
               {/* In Progress Column */}
-              <div className="flex flex-col">
-                <div className="bg-yellow-50 rounded-t-lg px-4 py-3 border-b-2 border-yellow-500">
-                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-                    In Progress
-                    <span className="ml-auto bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                      {inProgressCompanies.length}
-                    </span>
-                  </h2>
-                </div>
+              <DroppableColumn
+                id="in-progress-droppable"
+                title="In Progress"
+                count={inProgressCompanies.length}
+                color="yellow"
+              >
                 <SortableContext items={inProgressCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div id="in-progress-zone" className="flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4">
-                    {inProgressCompanies.length === 0 ? (
-                      <p className="text-gray-500 text-sm text-center py-8">No positions in progress</p>
-                    ) : (
-                      inProgressCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                    )}
-                  </div>
+                  {inProgressCompanies.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-8">No positions in progress</p>
+                  ) : (
+                    inProgressCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
+                  )}
                 </SortableContext>
-              </div>
+              </DroppableColumn>
 
               {/* Completed Column */}
-              <div className="flex-col">
-                <div className="bg-green-50 rounded-t-lg px-4 py-3 border-b-2 border-green-500">
-                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                    Completed
-                    <span className="ml-auto bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                      {completedCompanies.length}
-                    </span>
-                  </h2>
-                </div>
+              <DroppableColumn
+                id="completed-droppable"
+                title="Completed"
+                count={completedCompanies.length}
+                color="green"
+              >
                 <SortableContext items={completedCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div id="completed-zone" className="flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4">
-                    {completedCompanies.length === 0 ? (
-                      <p className="text-gray-500 text-sm text-center py-8">No completed positions</p>
-                    ) : (
-                      completedCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                    )}
-                  </div>
+                  {completedCompanies.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-8">No completed positions</p>
+                  ) : (
+                    completedCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
+                  )}
                 </SortableContext>
-              </div>
+              </DroppableColumn>
             </div>
           </DndContext>
         </div>
