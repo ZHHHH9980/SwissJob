@@ -15,24 +15,11 @@ interface Company {
   createdAt: string
 }
 
-interface InterviewAnalysis {
-  matchScore: number
-  strengths: string[]
-  weaknesses: string[]
-  suggestions: string[]
-  summary: string
-}
-
 export default function CompanyDetailPage() {
   const params = useParams()
   const [isJdExpanded, setIsJdExpanded] = useState(false)
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
-  const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [transcript, setTranscript] = useState('')
-  const [analysis, setAnalysis] = useState<InterviewAnalysis | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisError, setAnalysisError] = useState('')
 
   useEffect(() => {
     fetchCompany()
@@ -49,55 +36,6 @@ export default function CompanyDetailPage() {
       console.error('Error fetching company:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleAnalyzeInterview = async () => {
-    if (!audioFile || !company) return
-
-    setIsAnalyzing(true)
-    setAnalysisError('')
-    setAnalysis(null)
-
-    try {
-      const formData = new FormData()
-      formData.append('file', audioFile)
-
-      const transcribeResponse = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData
-      })
-
-      const transcribeData = await transcribeResponse.json()
-      if (!transcribeResponse.ok) {
-        throw new Error(transcribeData.error || 'Transcription failed')
-      }
-
-      const transcriptText = transcribeData.text || ''
-      setTranscript(transcriptText)
-
-      const analyzeResponse = await fetch('/api/ai/analyze-interview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          transcript: transcriptText,
-          jd: company.jd
-        })
-      })
-
-      const analyzeData = await analyzeResponse.json()
-      if (!analyzeResponse.ok) {
-        throw new Error(analyzeData.error || 'Interview analysis failed')
-      }
-
-      setAnalysis(analyzeData)
-    } catch (error) {
-      console.error('Interview analysis error:', error)
-      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze interview')
-    } finally {
-      setIsAnalyzing(false)
     }
   }
 
@@ -187,73 +125,6 @@ export default function CompanyDetailPage() {
                 >
                   Analyze Interview
                 </Link>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Interview Transcription & Analysis</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Interview Audio</label>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                </div>
-
-                <button
-                  onClick={handleAnalyzeInterview}
-                  disabled={!audioFile || isAnalyzing}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {isAnalyzing ? 'Processing...' : 'Transcribe & Analyze'}
-                </button>
-
-                {analysisError && (
-                  <p className="text-sm text-red-600">{analysisError}</p>
-                )}
-
-                {transcript && (
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">Transcript</h3>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap max-h-52 overflow-y-auto">{transcript}</p>
-                  </div>
-                )}
-
-                {analysis && (
-                  <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">AI Summary</h3>
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {analysis.matchScore}% Match
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700">{analysis.summary}</p>
-
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-1">Strengths</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {analysis.strengths.map((item, index) => <li key={`s-${index}`}>{item}</li>)}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-1">Weaknesses</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {analysis.weaknesses.map((item, index) => <li key={`w-${index}`}>{item}</li>)}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-1">Suggestions</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {analysis.suggestions.map((item, index) => <li key={`g-${index}`}>{item}</li>)}
-                      </ul>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
