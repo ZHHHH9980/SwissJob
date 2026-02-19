@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
-import pdf from 'pdf-parse'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdf = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 import { prisma } from '@/lib/prisma'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
