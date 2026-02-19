@@ -43,6 +43,9 @@ export default function InterviewPage() {
   const [chatInput, setChatInput] = useState('')
   const [isChatLoading, setIsChatLoading] = useState(false)
   const [chatError, setChatError] = useState('')
+  const [showResumeUpload, setShowResumeUpload] = useState(false)
+  const [isUploadingResume, setIsUploadingResume] = useState(false)
+  const resumeUploadRef = useRef<HTMLInputElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -89,7 +92,13 @@ export default function InterviewPage() {
       if (!res.ok) throw new Error(data.error || 'Analysis failed')
       setAnalysis(data)
     } catch (err) {
-      setAnalysisError(err instanceof Error ? err.message : 'Failed')
+      const msg = err instanceof Error ? err.message : 'Failed'
+      if (msg.includes('Resume text not found')) {
+        setShowResumeUpload(true)
+        setAnalysisError('')
+      } else {
+        setAnalysisError(msg)
+      }
     } finally {
       setIsAnalyzing(false)
     }
@@ -116,6 +125,31 @@ export default function InterviewPage() {
       setChatError('Send failed, please retry.')
     } finally {
       setIsChatLoading(false)
+    }
+  }
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingResume(true)
+    setAnalysisError('')
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/resume/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      setShowResumeUpload(false)
+      // Auto-retry analysis
+      await handleAnalyze()
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : 'Resume upload failed')
+    } finally {
+      setIsUploadingResume(false)
+      e.target.value = ''
     }
   }
 
@@ -181,6 +215,23 @@ export default function InterviewPage() {
           </button>
 
           {analysisError && <p className="text-sm text-red-600">{analysisError}</p>}
+          {showResumeUpload && (
+            <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium text-yellow-800">Resume required</p>
+              <p className="text-xs text-yellow-700">
+                Upload your resume (PDF) to enable AI analysis. It will be saved for future use.
+              </p>
+              <input
+                ref={resumeUploadRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleResumeUpload}
+                disabled={isUploadingResume}
+                className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-100 file:text-yellow-800 hover:file:bg-yellow-200 disabled:opacity-50"
+              />
+              {isUploadingResume && <p className="text-xs text-yellow-700">Uploading and retrying analysis...</p>}
+            </div>
+          )}
         </div>
 
         {analysis && (
