@@ -42,6 +42,7 @@ export default function InterviewPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [isChatLoading, setIsChatLoading] = useState(false)
+  const [chatError, setChatError] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export default function InterviewPage() {
     setChatInput('')
     setChatMessages(prev => [...prev, { role: 'user', content: message }])
     setIsChatLoading(true)
+    setChatError('')
 
     try {
       const res = await fetch('/api/ai/interview-chat', {
@@ -111,7 +113,7 @@ export default function InterviewPage() {
       if (!res.ok) throw new Error(data.error || 'Chat failed')
       setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Send failed, please retry.' }])
+      setChatError('Send failed, please retry.')
     } finally {
       setIsChatLoading(false)
     }
@@ -237,6 +239,7 @@ export default function InterviewPage() {
                 Send
               </button>
             </div>
+            {chatError && <p className="text-sm text-red-600">{chatError}</p>}
           </div>
         )}
       </div>
