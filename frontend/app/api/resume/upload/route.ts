@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises'
 import { join } from 'path'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
-import { prisma } from '@/lib/prisma'
+import { writeSettings } from '@/lib/settings'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPE = 'application/pdf'
@@ -69,34 +69,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create user (for now, we'll use a single user)
-    let user = await prisma.user.findFirst()
+    // Persist resume path and text to settings
+    await writeSettings({ resumePath: filepath, resumeText: extractedText })
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: 'Default User',
-          resumePath: filepath,
-          resumeText: extractedText
-        }
-      })
-    } else {
-      // Update existing user
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          resumePath: filepath,
-          resumeText: extractedText,
-          updatedAt: new Date()
-        }
-      })
-    }
-
-    // Return success response with fileId and text preview
     return NextResponse.json({
       success: true,
-      fileId: user.id,
-      filename: filename,
+      filename,
       textPreview: extractedText.substring(0, 500),
       fileSize: file.size,
       uploadedAt: new Date().toISOString()
