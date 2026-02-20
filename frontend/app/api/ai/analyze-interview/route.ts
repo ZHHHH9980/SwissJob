@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOpenAIClient } from '@/lib/app-settings'
 import { parseJsonFromText } from '@/lib/parse-json'
-import { prisma } from '@/lib/prisma'
+import { readSettings } from '@/lib/settings'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,11 +16,8 @@ export async function POST(request: NextRequest) {
 
     let resumeText = typeof resume === 'string' ? resume.trim() : ''
     if (!resumeText) {
-      const user = await prisma.user.findFirst({
-        orderBy: { updatedAt: 'desc' },
-        select: { resumeText: true }
-      })
-      resumeText = user?.resumeText?.trim() || ''
+      const settings = await readSettings()
+      resumeText = settings.resumeText?.trim() || ''
     }
 
     if (!resumeText) {
@@ -41,7 +38,7 @@ export async function POST(request: NextRequest) {
         },
         {
           role: 'user',
-          content: `Analyze this interview performance based on the job requirements and candidate's resume.\n\n【Job Requirements】\n${jd}\n\n【Candidate Resume】\n${resumeText}\n\n【Interview Transcript】\n${transcript}\n\nProvide analysis in JSON format:\n{\n  "matchScore": 85,\n  "strengths": ["strength1", "strength2"],\n  "weaknesses": ["weakness1", "weakness2"],\n  "suggestions": [{"weakness": "weakness description", "advice": "specific improvement advice"}],\n  "summary": "Overall assessment summary"\n}`
+          content: `Analyze this interview performance based on the job requirements and candidate's resume.\n\n【Job Requirements】\n${jd}\n\n【Candidate Resume】\n${resumeText}\n\n【Interview Transcript】\n${transcript}\n\nProvide analysis in JSON format:\n{\n  \"matchScore\": 85,\n  \"strengths\": [\"strength1\", \"strength2\"],\n  \"weaknesses\": [\"weakness1\", \"weakness2\"],\n  \"suggestions\": [{\"weakness\": \"weakness description\", \"advice\": \"specific improvement advice\"}],\n  \"summary\": \"Overall assessment summary\"\n}`
         }
       ]
     })
