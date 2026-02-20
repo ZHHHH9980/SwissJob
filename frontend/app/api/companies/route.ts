@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getCompanies, createCompany } from '@/lib/notion'
 
 export async function GET() {
   try {
-    const companies = await prisma.company.findMany({
-      include: {
-        interviews: true,
-        mockInterviews: true
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const companies = await getCompanies()
     return NextResponse.json(companies)
   } catch (error) {
     console.error('Error fetching companies:', error)
@@ -20,25 +14,16 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, position, jd, skills } = body
+    const { name, website, description, jobDescription } = body
 
-    if (!name || !position || !jd) {
+    if (!name) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, position, jd' },
+        { error: 'Missing required field: name' },
         { status: 400 }
       )
     }
 
-    const company = await prisma.company.create({
-      data: {
-        name,
-        position,
-        jd,
-        skills: skills ? JSON.stringify(skills) : null,
-        status: 'pending'
-      }
-    })
-
+    const company = await createCompany({ name, website, description, jobDescription })
     return NextResponse.json(company)
   } catch (error) {
     console.error('Error creating company:', error)

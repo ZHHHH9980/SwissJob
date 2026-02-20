@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getCompany, updateCompany, deleteCompany } from '@/lib/notion'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const company = await prisma.company.findUnique({
-      where: { id: params.id },
-      include: {
-        interviews: true,
-        mockInterviews: true
-      }
-    })
-
+    const company = await getCompany(params.id)
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
-
     return NextResponse.json(company)
   } catch (error) {
     console.error('Error fetching company:', error)
@@ -31,19 +23,8 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json()
-    const { name, position, jd, skills, status } = body
-
-    const company = await prisma.company.update({
-      where: { id: params.id },
-      data: {
-        ...(name && { name }),
-        ...(position && { position }),
-        ...(jd && { jd }),
-        ...(skills && { skills: JSON.stringify(skills) }),
-        ...(status && { status })
-      }
-    })
-
+    const { name, website, description, jobDescription } = body
+    const company = await updateCompany(params.id, { name, website, description, jobDescription })
     return NextResponse.json(company)
   } catch (error) {
     console.error('Error updating company:', error)
@@ -51,16 +32,20 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
+export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    await prisma.company.delete({
-      where: { id: params.id }
-    })
+  return PATCH(request, { params })
+}
 
-    return NextResponse.json({ success: true })
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await deleteCompany(params.id)
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting company:', error)
     return NextResponse.json({ error: 'Failed to delete company' }, { status: 500 })
