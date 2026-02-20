@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { client, settings } = await getOpenAIClient()
+    const { client, settings: aiSettings } = await getOpenAIClient()
 
     const completion = await client.chat.completions.create({
-      model: settings.aiModel,
+      model: aiSettings.aiModel,
       messages: [
         {
           role: 'system',

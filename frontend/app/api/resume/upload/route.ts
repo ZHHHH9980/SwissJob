@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
+import { writeFile, mkdir } from 'fs/promises'
+import path, { join } from 'path'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdf = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 import { writeSettings } from '@/lib/settings'
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Save file to disk
     try {
+      await mkdir(path.dirname(filepath), { recursive: true })
       await writeFile(filepath, buffer)
     } catch (error) {
       console.error('File save error:', error)
