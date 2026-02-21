@@ -5,7 +5,11 @@ export async function GET() {
   try {
     const companies = await getCompanies()
     return NextResponse.json(companies)
-  } catch (error) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    if (msg.includes('not configured')) {
+      return NextResponse.json([])
+    }
     console.error('Error fetching companies:', error)
     return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 })
   }

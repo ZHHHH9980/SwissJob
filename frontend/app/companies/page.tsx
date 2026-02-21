@@ -56,7 +56,8 @@ export default function CompaniesPage() {
     try {
       const response = await fetch('/api/companies')
       const data = await response.json()
-      const sorted = data.sort((a: Company, b: Company) =>
+      const list: Company[] = Array.isArray(data) ? data : []
+      const sorted = list.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       setCompanies(sorted)
