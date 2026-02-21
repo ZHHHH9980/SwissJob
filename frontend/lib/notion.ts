@@ -191,7 +191,7 @@ export async function getCompanies(): Promise<Company[]> {
   if (!dbId) throw new Error('Notion companies DB not configured')
 
   const response = await withRetry(() =>
-    notion.dataSources.query({ data_source_id: dbId })
+    notion.databases.query({ database_id: dbId })
   )
 
   return Promise.all(
@@ -234,7 +234,7 @@ export async function createCompany(
 
   const page = await withRetry(() =>
     notion.pages.create({
-      parent: { data_source_id: dbId },
+      parent: { database_id: dbId },
       properties,
     })
   )
@@ -328,7 +328,7 @@ export async function getInterviews(companyId?: string): Promise<Interview[]> {
     : undefined
 
   const response = await withRetry(() =>
-    notion.dataSources.query({ data_source_id: dbId, ...(filter ? { filter } : {}) })
+    notion.databases.query({ database_id: dbId, ...(filter ? { filter } : {}) })
   )
 
   return Promise.all(
@@ -376,7 +376,7 @@ export async function createInterview(
     properties['Notes'] = { rich_text: [{ text: { content: data.notes.slice(0, 2000) } }] }
 
   const page = await withRetry(() =>
-    notion.pages.create({ parent: { data_source_id: dbId }, properties })
+    notion.pages.create({ parent: { database_id: dbId }, properties })
   )
 
   const combined = buildTranscriptContent(data.transcript, data.aiAnalysis)
@@ -453,7 +453,7 @@ export async function getSkills(): Promise<Skill[]> {
   if (!dbId) throw new Error('Notion skills DB not configured')
 
   const response = await withRetry(() =>
-    notion.dataSources.query({ data_source_id: dbId })
+    notion.databases.query({ database_id: dbId })
   )
   return response.results.map(page => pageToSkill(page as unknown as NotionPage))
 }
@@ -475,7 +475,7 @@ export async function createSkill(
     properties['Notes'] = { rich_text: [{ text: { content: data.notes.slice(0, 2000) } }] }
 
   const page = await withRetry(() =>
-    notion.pages.create({ parent: { data_source_id: dbId }, properties })
+    notion.pages.create({ parent: { database_id: dbId }, properties })
   )
   return pageToSkill(page as unknown as NotionPage)
 }
@@ -529,7 +529,7 @@ export async function getMockInterviews(): Promise<MockInterview[]> {
   if (!dbId) throw new Error('Notion mockInterviews DB not configured')
 
   const response = await withRetry(() =>
-    notion.dataSources.query({ data_source_id: dbId })
+    notion.databases.query({ database_id: dbId })
   )
   return response.results.map(page => pageToMockInterview(page as unknown as NotionPage))
 }
@@ -551,7 +551,7 @@ export async function createMockInterview(
     properties['Feedback'] = { rich_text: [{ text: { content: data.feedback.slice(0, 2000) } }] }
 
   const page = await withRetry(() =>
-    notion.pages.create({ parent: { data_source_id: dbId }, properties })
+    notion.pages.create({ parent: { database_id: dbId }, properties })
   )
   return pageToMockInterview(page as unknown as NotionPage)
 }
