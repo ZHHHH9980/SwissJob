@@ -12,6 +12,7 @@ export type Company = {
   website?: string
   description?: string
   jobDescription?: string
+  status: 'pending' | 'in-progress' | 'completed'
   createdAt: string
 }
 
@@ -180,6 +181,7 @@ function pageToCompany(page: NotionPage): Company {
     name: getPropTitle(props, 'Name'),
     website: getPropUrl(props, 'Website') || undefined,
     description: getPropRichText(props, 'Description') || undefined,
+    status: (getPropSelect(props, 'Status') || 'pending') as Company['status'],
     createdAt: page.created_time,
   }
 }
@@ -231,6 +233,7 @@ export async function createCompany(
   if (data.website) properties['Website'] = { url: data.website }
   if (data.description)
     properties['Description'] = { rich_text: [{ text: { content: data.description.slice(0, 2000) } }] }
+  properties['Status'] = { select: { name: data.status || 'pending' } }
 
   const page = await withRetry(() =>
     notion.pages.create({
@@ -261,6 +264,8 @@ export async function updateCompany(
     properties['Website'] = { url: data.website || null }
   if (data.description !== undefined)
     properties['Description'] = { rich_text: [{ text: { content: data.description.slice(0, 2000) } }] }
+  if (data.status !== undefined)
+    properties['Status'] = { select: { name: data.status } }
 
   const page = await withRetry(() =>
     notion.pages.update({ page_id: id, properties })

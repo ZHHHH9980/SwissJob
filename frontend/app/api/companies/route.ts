@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, website, description, jobDescription } = body
+    const { name, website, description, jobDescription, status } = body
 
     if (!name) {
       return NextResponse.json(
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const company = await createCompany({ name, website, description, jobDescription })
+    const company = await createCompany({ name, website, description, jobDescription, status: status || 'pending' })
     return NextResponse.json(company)
   } catch (error) {
     console.error('Error creating company:', error)
