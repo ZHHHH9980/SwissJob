@@ -267,7 +267,7 @@ export default function CompaniesPage() {
         {...listeners}
         className="bg-white rounded-lg shadow hover:shadow-lg transition p-4 relative group mb-4 cursor-move"
       >
-        <Link href={`/companies/${company.id}`} className="block" onClick={(e) => e.preventDefault()}>
+        <Link href={`/companies/${company.id}`} className="block" onClick={(e) => { if (isDragging) e.preventDefault() }}>
           <div className="mb-3">
             <h3 className="text-lg font-bold text-gray-900 mb-1">{company.name}</h3>
             {company.matchScore && (
