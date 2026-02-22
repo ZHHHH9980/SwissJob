@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         },
         {
           role: 'user',
-          content: `Analyze this interview performance based on the job requirements and candidate's resume.\n\n【Job Requirements】\n${jd}\n\n【Candidate Resume】\n${resumeText}\n\n【Interview Transcript】\n${transcript}\n\nProvide analysis in JSON format:\n{\n  \"matchScore\": 85,\n  \"strengths\": [\"strength1\", \"strength2\"],\n  \"weaknesses\": [\"weakness1\", \"weakness2\"],\n  \"suggestions\": [{\"weakness\": \"weakness description\", \"advice\": \"specific improvement advice\"}],\n  \"summary\": \"Overall assessment summary\"\n}`
+          content: `Analyze this interview performance based on the job requirements and candidate's resume.\n\n【Job Requirements】\n${jd}\n\n【Candidate Resume】\n${resumeText}\n\n【Interview Transcript】\n${transcript}\n\nProvide analysis in JSON format:\n{\n  "matchScore": 85,\n  "overallScore": 7.5,\n  "strengths": ["strength1", "strength2"],\n  "weaknesses": ["weakness1", "weakness2"],\n  "suggestions": [{"weakness": "weakness description", "advice": "specific improvement advice"}],\n  "questions": [\n    {\n      "question": "The interview question asked",\n      "answer_quality": "good",\n      "score": 8,\n      "feedback": "Brief feedback on the answer"\n    }\n  ],\n  "keyTopics": ["topic1", "topic2"],\n  "summary": "Overall assessment summary"\n}\n\nFor questions array, extract each distinct question from the transcript. answer_quality should be "good", "average", or "poor". score is 1-10.`
         }
       ]
     })
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     // Ensure all expected fields exist with proper defaults
     const analysis = {
       matchScore: typeof result.matchScore === 'number' ? result.matchScore : 0,
+      overallScore: typeof result.overallScore === 'number' ? result.overallScore : 0,
       strengths: Array.isArray(result.strengths) ? result.strengths : [],
       weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses : [],
       suggestions: Array.isArray(result.suggestions)
@@ -65,6 +66,15 @@ export async function POST(request: NextRequest) {
               : { weakness: String(s), advice: '' }
           )
         : [],
+      questions: Array.isArray(result.questions)
+        ? result.questions.map((q: Record<string, unknown>) => ({
+            question: q.question || '',
+            answer_quality: q.answer_quality || 'average',
+            score: typeof q.score === 'number' ? q.score : 5,
+            feedback: q.feedback || '',
+          }))
+        : [],
+      keyTopics: Array.isArray(result.keyTopics) ? result.keyTopics : [],
       summary: result.summary || 'Analysis completed'
     }
 

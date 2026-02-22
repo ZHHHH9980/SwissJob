@@ -16,11 +16,21 @@ interface Suggestion {
   advice: string
 }
 
+interface QuestionAnalysis {
+  question: string
+  answer_quality: 'good' | 'average' | 'poor'
+  score: number
+  feedback: string
+}
+
 interface InterviewAnalysis {
   matchScore: number
+  overallScore: number
   strengths: string[]
   weaknesses: string[]
   suggestions: Suggestion[]
+  questions: QuestionAnalysis[]
+  keyTopics: string[]
   summary: string
 }
 
@@ -238,11 +248,55 @@ export default function InterviewPage() {
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">Analysis Results</h2>
-              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                {analysis.matchScore}% Match
-              </span>
+              <div className="flex gap-2">
+                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {analysis.matchScore}% Match
+                </span>
+                {analysis.overallScore > 0 && (
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Score: {analysis.overallScore}/10
+                  </span>
+                )}
+              </div>
             </div>
             <p className="text-sm text-gray-700">{analysis.summary}</p>
+
+            {/* Key Topics */}
+            {analysis.keyTopics.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {analysis.keyTopics.map((t, i) => (
+                  <span key={i} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">{t}</span>
+                ))}
+              </div>
+            )}
+
+            {/* Questions Breakdown */}
+            {analysis.questions.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Questions Breakdown</h3>
+                <div className="space-y-2">
+                  {analysis.questions.map((q, i) => {
+                    const qualityColor = q.answer_quality === 'good' ? 'text-green-600' : q.answer_quality === 'poor' ? 'text-red-600' : 'text-yellow-600'
+                    return (
+                      <div key={i} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-800">{q.question}</p>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-xs font-medium ${qualityColor}`}>{q.answer_quality}</span>
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${q.score * 10}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-500">{q.score}/10</span>
+                          </div>
+                        </div>
+                        {q.feedback && <p className="text-xs text-gray-500 mt-1">{q.feedback}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-2">Strengths</h3>
               <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">

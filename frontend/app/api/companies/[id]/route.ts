@@ -23,8 +23,8 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json()
-    const { name, website, description, jobDescription } = body
-    const company = await updateCompany(params.id, { name, website, description, jobDescription })
+    const { name, website, description, jobDescription, status } = body
+    const company = await updateCompany(params.id, { name, website, description, jobDescription, status })
     return NextResponse.json(company)
   } catch (error) {
     console.error('Error updating company:', error)

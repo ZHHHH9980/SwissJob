@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import StatusConfigDialog from '@/components/StatusConfigDialog'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
@@ -22,12 +23,13 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
+import { useKanbanStatuses, COLOR_CLASSES } from '@/lib/use-kanban-statuses'
 
 interface Company {
   id: string
   name: string
   position: string
-  status: 'pending' | 'in-progress' | 'completed'
+  status: string
   matchScore?: number
   createdAt: string
 }
@@ -39,28 +41,21 @@ export default function CompaniesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [companyToDelete, setCompanyToDelete] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [configOpen, setConfigOpen] = useState(false)
+  const { statuses, setStatuses, loaded } = useKanbanStatuses()
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  useEffect(() => {
-    fetchCompanies()
-  }, [])
+  useEffect(() => { fetchCompanies() }, [])
 
   const fetchCompanies = async () => {
     try {
       const response = await fetch('/api/companies')
       const data = await response.json()
       const list: Company[] = Array.isArray(data) ? data : []
-      const sorted = list.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      setCompanies(sorted)
+      setCompanies(list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
     } catch (error) {
       console.error('Error fetching companies:', error)
     } finally {
@@ -68,23 +63,34 @@ export default function CompaniesPage() {
     }
   }
 
+  // Group companies by status columns
+  const grouped = useMemo(() => {
+    const statusKeys = new Set(statuses.map(s => s.key))
+    const map: Record<string, Company[]> = {}
+    for (const s of statuses) map[s.key] = []
+    for (const c of companies) {
+      if (statusKeys.has(c.status)) {
+        map[c.status].push(c)
+      } else {
+        // Unknown status goes to first column
+        map[statuses[0]?.key]?.push(c)
+      }
+    }
+    return map
+  }, [companies, statuses])
+
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
     setCompanyToDelete(id)
     setDeleteDialogOpen(true)
   }
 
   const confirmDelete = async () => {
     if (!companyToDelete) return
-
     setDeletingId(companyToDelete)
     try {
-      const response = await fetch(`/api/companies/${companyToDelete}`, {
-        method: 'DELETE'
-      })
-
+      const response = await fetch(`/api/companies/${companyToDelete}`, { method: 'DELETE' })
       if (response.ok) {
         setCompanies(companies.filter(c => c.id !== companyToDelete))
         setDeleteDialogOpen(false)
@@ -100,35 +106,22 @@ export default function CompaniesPage() {
     }
   }
 
-  const cancelDelete = () => {
-    setDeleteDialogOpen(false)
-    setCompanyToDelete(null)
-  }
-
-  const handleStatusChange = async (id: string, newStatus: Company['status'], e: React.MouseEvent) => {
+  const handleStatusChange = async (id: string, newStatus: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
     try {
       const response = await fetch(`/api/companies/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       })
-
       if (response.ok) {
-        setCompanies(companies.map(c =>
-          c.id === id ? { ...c, status: newStatus } : c
-        ))
+        setCompanies(companies.map(c => c.id === id ? { ...c, status: newStatus } : c))
       }
     } catch (error) {
       console.error('Error updating status:', error)
     }
   }
-
-  const pendingCompanies = companies.filter(c => c.status === 'pending')
-  const inProgressCompanies = companies.filter(c => c.status === 'in-progress')
-  const completedCompanies = companies.filter(c => c.status === 'completed')
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
@@ -137,38 +130,30 @@ export default function CompaniesPage() {
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event
     if (!over) return
-
     const activeCompany = companies.find(c => c.id === active.id)
     if (!activeCompany) return
 
-    // Determine new status based on drop zone
-    let newStatus: Company['status'] | null = null
     const overId = over.id as string
+    let newStatus: string | null = null
 
-    if (overId === 'pending-droppable' || pendingCompanies.some(c => c.id === overId)) {
-      newStatus = 'pending'
-    } else if (overId === 'in-progress-droppable' || inProgressCompanies.some(c => c.id === overId)) {
-      newStatus = 'in-progress'
-    } else if (overId === 'completed-droppable' || completedCompanies.some(c => c.id === overId)) {
-      newStatus = 'completed'
+    for (const status of statuses) {
+      const colCompanies = grouped[status.key] || []
+      if (overId === `${status.key}-droppable` || colCompanies.some(c => c.id === overId)) {
+        newStatus = status.key
+        break
+      }
     }
 
     if (newStatus && newStatus !== activeCompany.status) {
-      // Optimistically update UI
-      setCompanies(companies.map(c =>
-        c.id === activeCompany.id ? { ...c, status: newStatus } : c
-      ))
+      setCompanies(companies.map(c => c.id === activeCompany.id ? { ...c, status: newStatus } : c))
     }
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active } = event
     setActiveId(null)
-
     const activeCompany = companies.find(c => c.id === active.id)
     if (!activeCompany) return
-
-    // Persist to backend
     try {
       await fetch(`/api/companies/${activeCompany.id}`, {
         method: 'PATCH',
@@ -177,65 +162,27 @@ export default function CompaniesPage() {
       })
     } catch (error) {
       console.error('Error updating status:', error)
-      // Revert on error
       fetchCompanies()
     }
   }
 
-  const DroppableColumn = ({
-    id,
-    children,
-    title,
-    count,
-    color
-  }: {
-    id: string
-    children: React.ReactNode
-    title: string
-    count: number
-    color: 'blue' | 'yellow' | 'green'
+  const DroppableColumn = ({ id, children, title, count, color }: {
+    id: string; children: React.ReactNode; title: string; count: number; color: string
   }) => {
     const { setNodeRef, isOver } = useDroppable({ id })
-
-    const colorClasses = {
-      blue: {
-        header: 'bg-blue-50 border-blue-500',
-        badge: 'bg-blue-100 text-blue-800',
-        dot: 'bg-blue-500',
-        highlight: 'ring-2 ring-blue-400'
-      },
-      yellow: {
-        header: 'bg-yellow-50 border-yellow-500',
-        badge: 'bg-yellow-100 text-yellow-800',
-        dot: 'bg-yellow-500',
-        highlight: 'ring-2 ring-yellow-400'
-      },
-      green: {
-        header: 'bg-green-50 border-green-500',
-        badge: 'bg-green-100 text-green-800',
-        dot: 'bg-green-500',
-        highlight: 'ring-2 ring-green-400'
-      }
-    }
-
-    const colors = colorClasses[color]
-
+    const colors = COLOR_CLASSES[color] || COLOR_CLASSES.blue
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col min-w-[250px]">
         <div className={`${colors.header} rounded-t-lg px-4 py-3 border-b-2`}>
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${colors.dot}`}></span>
             {title}
-            <span className={`ml-auto ${colors.badge} text-xs px-2 py-1 rounded-full`}>
-              {count}
-            </span>
+            <span className={`ml-auto ${colors.badge} text-xs px-2 py-1 rounded-full`}>{count}</span>
           </h2>
         </div>
         <div
           ref={setNodeRef}
-          className={`flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4 transition-all ${
-            isOver ? colors.highlight : ''
-          }`}
+          className={`flex-1 overflow-y-auto bg-gray-100 rounded-b-lg p-4 transition-all ${isOver ? colors.highlight : ''}`}
         >
           {children}
         </div>
@@ -244,87 +191,49 @@ export default function CompaniesPage() {
   }
 
   const DraggableCompanyCard = ({ company }: { company: Company }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: company.id })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    }
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: company.id })
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
     return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}
         className="bg-white rounded-lg shadow hover:shadow-lg transition p-4 relative group mb-4 cursor-move"
       >
         <Link href={`/companies/${company.id}`} className="block" onClick={(e) => { if (isDragging) e.preventDefault() }}>
           <div className="mb-3">
             <h3 className="text-lg font-bold text-gray-900 mb-1">{company.name}</h3>
             {company.matchScore && (
-              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                {company.matchScore}% Match
-              </span>
+              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{company.matchScore}% Match</span>
             )}
           </div>
           <p className="text-gray-700 text-sm mb-3">{company.position}</p>
           <div className="text-xs text-gray-500">{company.createdAt}</div>
         </Link>
-
-        {/* Status Dropdown */}
-        <div className="mt-3" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <div className="mt-3" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
           <FormControl fullWidth size="small">
             <Select
               value={company.status}
-              onChange={(e) => handleStatusChange(company.id, e.target.value as Company['status'], e as any)}
+              onChange={(e) => handleStatusChange(company.id, e.target.value, e as any)}
               onClick={(e) => e.stopPropagation()}
               sx={{
                 fontSize: '0.875rem',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#e5e7eb'
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#3b82f6'
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#3b82f6'
-                }
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e5e7eb' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6' }
               }}
             >
-              <MenuItem value="pending">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  Pending
-                </div>
-              </MenuItem>
-              <MenuItem value="in-progress">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                  In Progress
-                </div>
-              </MenuItem>
-              <MenuItem value="completed">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                  Completed
-                </div>
-              </MenuItem>
+              {statuses.map(s => (
+                <MenuItem key={s.key} value={s.key}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${COLOR_CLASSES[s.color]?.dot || 'bg-gray-400'}`}></span>
+                    {s.label}
+                  </div>
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </div>
-
-        {/* Delete Button */}
         <button
-          onClick={(e) => { e.stopPropagation(); handleDelete(company.id, e); }}
+          onClick={(e) => { e.stopPropagation(); handleDelete(company.id, e) }}
           disabled={deletingId === company.id}
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg disabled:opacity-50"
           title="Delete position"
@@ -344,7 +253,7 @@ export default function CompaniesPage() {
     )
   }
 
-  if (loading) {
+  if (loading || !loaded) {
     return (
       <div className="flex h-screen">
         <Sidebar />
@@ -358,85 +267,66 @@ export default function CompaniesPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-
       <div className="flex-1 overflow-y-auto bg-gray-50">
         <div className="h-full px-4 py-8">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Job Applications</h1>
               <p className="text-gray-600 mt-2">{companies.length} total positions</p>
             </div>
-            <Link
-              href="/companies/new"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-            >
-              + Add Position
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setConfigOpen(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                title="Configure columns"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+              <Link href="/companies/new" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                + Add Position
+              </Link>
+            </div>
           </div>
 
-          {/* Kanban Board - 3 Columns */}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
+          <DndContext sensors={sensors} collisionDetection={closestCenter}
+            onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-              {/* Pending Column */}
-              <DroppableColumn
-                id="pending-droppable"
-                title="Pending"
-                count={pendingCompanies.length}
-                color="blue"
-              >
-                <SortableContext items={pendingCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  {pendingCompanies.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-8">No pending positions</p>
-                  ) : (
-                    pendingCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                  )}
-                </SortableContext>
-              </DroppableColumn>
-
-              {/* In Progress Column */}
-              <DroppableColumn
-                id="in-progress-droppable"
-                title="In Progress"
-                count={inProgressCompanies.length}
-                color="yellow"
-              >
-                <SortableContext items={inProgressCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  {inProgressCompanies.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-8">No positions in progress</p>
-                  ) : (
-                    inProgressCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                  )}
-                </SortableContext>
-              </DroppableColumn>
-
-              {/* Completed Column */}
-              <DroppableColumn
-                id="completed-droppable"
-                title="Completed"
-                count={completedCompanies.length}
-                color="green"
-              >
-                <SortableContext items={completedCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  {completedCompanies.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-8">No completed positions</p>
-                  ) : (
-                    completedCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
-                  )}
-                </SortableContext>
-              </DroppableColumn>
+            <div
+              className="gap-6 h-[calc(100vh-200px)]"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${statuses.length}, minmax(250px, 1fr))`,
+                overflowX: statuses.length > 4 ? 'auto' : 'hidden',
+              }}
+            >
+              {statuses.map(status => {
+                const colCompanies = grouped[status.key] || []
+                return (
+                  <DroppableColumn
+                    key={status.key}
+                    id={`${status.key}-droppable`}
+                    title={status.label}
+                    count={colCompanies.length}
+                    color={status.color}
+                  >
+                    <SortableContext items={colCompanies.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      {colCompanies.length === 0 ? (
+                        <p className="text-gray-500 text-sm text-center py-8">No positions</p>
+                      ) : (
+                        colCompanies.map(company => <DraggableCompanyCard key={company.id} company={company} />)
+                      )}
+                    </SortableContext>
+                  </DroppableColumn>
+                )
+              })}
             </div>
           </DndContext>
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
         title="Delete Position"
@@ -444,8 +334,15 @@ export default function CompaniesPage() {
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+        onCancel={() => { setDeleteDialogOpen(false); setCompanyToDelete(null) }}
         loading={deletingId !== null}
+      />
+
+      <StatusConfigDialog
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        statuses={statuses}
+        onSave={setStatuses}
       />
     </div>
   )
