@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { fetchT } from '@/lib/fetch'
 
 type Interview = {
   id: string
@@ -36,14 +37,24 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
-      fetch('/api/interviews').then(r => r.json()),
-      fetch('/api/companies').then(r => r.json()),
+      fetchT('/api/interviews', 'Load interviews').then(r => r.json()),
+      fetchT('/api/companies', 'Load companies').then(r => r.json()),
     ]).then(([intData, compData]) => {
       setInterviews(Array.isArray(intData) ? intData : [])
       setCompanies(Array.isArray(compData) ? compData : [])
-    }).catch(console.error).finally(() => setLoading(false))
+    }).catch(err => console.error(err instanceof Error ? err.message : err)).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
+    const handler = (e: Event) => {
+      const scope = (e as CustomEvent).detail?.scope
+      if (scope === 'interviews' || scope === 'companies') fetchData()
+    }
+    window.addEventListener('swissjob:refresh', handler)
+    return () => window.removeEventListener('swissjob:refresh', handler)
   }, [])
 
   const companyMap = useMemo(() => {
@@ -132,7 +143,10 @@ export default function CalendarPage() {
                           style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
                         >
                           <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${STATUS_COLORS[iv.status] || 'bg-gray-400'}`} />
-                          <span className="text-gray-700">{companyMap[iv.companyId] || iv.position}</span>
+                          <span className="text-gray-700">
+                            {iv.date && <span className="font-medium">{new Date(iv.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                            {' '}{companyMap[iv.companyId] || iv.position}
+                          </span>
                         </Link>
                       ))}
                     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { fetchT } from '@/lib/fetch'
 
 interface Company {
   id: string
@@ -38,23 +39,34 @@ export default function CompanyDetailPage() {
   const [company, setCompany] = useState<Company | null>(null)
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showSchedule, setShowSchedule] = useState(false)
   const [scheduleForm, setScheduleForm] = useState({ date: '', notes: '' })
   const [scheduling, setScheduling] = useState(false)
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+    const handler = (e: Event) => {
+      const scope = (e as CustomEvent).detail?.scope
+      if (scope === 'companies' || scope === 'interviews') fetchData()
+    }
+    window.addEventListener('swissjob:refresh', handler)
+    return () => window.removeEventListener('swissjob:refresh', handler)
+  }, [])
 
   const fetchData = async () => {
+    setError('')
     try {
       const [compRes, intRes] = await Promise.all([
-        fetch(`/api/companies/${params.id}`),
-        fetch(`/api/interviews?companyId=${params.id}`),
+        fetchT(`/api/companies/${params.id}`, 'Load company'),
+        fetchT(`/api/interviews?companyId=${params.id}`, 'Load interviews'),
       ])
-      if (compRes.ok) setCompany(await compRes.json())
+      setCompany(await compRes.json())
       const intData = await intRes.json()
       setInterviews(Array.isArray(intData) ? intData : [])
     } catch (error) {
-      console.error('Error fetching data:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load')
+      console.error(error instanceof Error ? error.message : error)
     } finally {
       setLoading(false)
     }
@@ -118,7 +130,14 @@ export default function CompanyDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Company not found</p>
+          {error ? (
+            <>
+              <p className="text-red-600 mb-2">{error}</p>
+              <button onClick={() => { setLoading(true); fetchData() }} className="text-blue-600 hover:underline mb-4 block mx-auto">Retry</button>
+            </>
+          ) : (
+            <p className="text-gray-600 mb-4">Company not found</p>
+          )}
           <Link href="/companies" className="text-blue-600 hover:underline">← Back to Positions</Link>
         </div>
       </div>

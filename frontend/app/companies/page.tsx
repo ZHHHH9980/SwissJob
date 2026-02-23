@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import { fetchT } from '@/lib/fetch'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import StatusConfigDialog from '@/components/StatusConfigDialog'
 import Select from '@mui/material/Select'
@@ -37,6 +38,7 @@ interface Company {
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [companyToDelete, setCompanyToDelete] = useState<string | null>(null)
@@ -48,16 +50,26 @@ export default function CompaniesPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  useEffect(() => { fetchCompanies() }, [])
+  useEffect(() => {
+    fetchCompanies()
+    const handler = (e: Event) => {
+      const scope = (e as CustomEvent).detail?.scope
+      if (scope === 'companies') fetchCompanies()
+    }
+    window.addEventListener('swissjob:refresh', handler)
+    return () => window.removeEventListener('swissjob:refresh', handler)
+  }, [])
 
   const fetchCompanies = async () => {
+    setFetchError('')
     try {
-      const response = await fetch('/api/companies')
+      const response = await fetchT('/api/companies', 'Load companies', { timeout: 15000 })
       const data = await response.json()
       const list: Company[] = Array.isArray(data) ? data : []
       setCompanies(list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
     } catch (error) {
-      console.error('Error fetching companies:', error)
+      setFetchError(error instanceof Error ? error.message : 'Failed to load')
+      console.error(error instanceof Error ? error.message : error)
     } finally {
       setLoading(false)
     }
@@ -273,6 +285,9 @@ export default function CompaniesPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Job Applications</h1>
               <p className="text-gray-600 mt-2">{companies.length} total positions</p>
+              {fetchError && (
+                <p className="text-red-500 text-sm mt-1">{fetchError} — <button onClick={() => { setLoading(true); fetchCompanies() }} className="text-blue-600 hover:underline">Retry</button></p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button

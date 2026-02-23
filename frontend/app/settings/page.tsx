@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import Sidebar from '@/components/Sidebar'
+import { fetchT } from '@/lib/fetch'
 
 type SettingsForm = {
   aiBaseUrl: string
@@ -35,17 +36,13 @@ export default function SettingsPage() {
       mockInterviews: '',
     }
   })
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/settings')
-        if (!response.ok) {
-          throw new Error('Failed to load settings')
-        }
+        const response = await fetchT('/api/settings', 'Load settings')
         const data = await response.json()
         setForm({
           aiBaseUrl: data.aiBaseUrl || 'https://api.openai.com/v1',
@@ -66,7 +63,7 @@ export default function SettingsPage() {
         console.error(error)
         setMessage('Failed to load settings.')
       } finally {
-        setLoading(false)
+        // settings loaded
       }
     }
 
@@ -106,10 +103,7 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           <p className="text-gray-600 mt-2">Configure your OpenAI-compatible API and Whisper transcription.</p>
 
-          {loading ? (
-            <div className="mt-8 text-gray-600">Loading...</div>
-          ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               <section className="bg-white rounded-lg shadow p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">AI API (OpenAI-compatible)</h2>
 
@@ -248,7 +242,6 @@ export default function SettingsPage() {
                 {message && <p className="text-sm text-gray-600">{message}</p>}
               </div>
             </form>
-          )}
         </div>
       </main>
     </div>

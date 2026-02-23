@@ -56,20 +56,48 @@ const CHUNK_SIZE = 2000
 // Rate-limit retry helper
 // ---------------------------------------------------------------------------
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn()
     } catch (err: unknown) {
-      const e = err as { status?: number }
-      if (e?.status === 429 && i < retries - 1) {
-        await new Promise(r => setTimeout(r, 1000))
+      const e = err as { status?: number; code?: string }
+      // Retry on rate-limit or transient network errors
+      if ((e?.status === 429 || e?.code === 'ECONNRESET') && i < retries - 1) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)))
         continue
       }
       throw err
     }
   }
   throw new Error('unreachable')
+}
+
+// ---------------------------------------------------------------------------
+// Simple in-memory cache (TTL-based, server-side)
+// ---------------------------------------------------------------------------
+
+type CacheEntry<T> = { data: T; ts: number }
+const cache = new Map<string, CacheEntry<unknown>>()
+const CACHE_TTL = 30_000 // 30 seconds
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key)
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data as T
+  cache.delete(key)
+  return null
+}
+
+function setCache<T>(key: string, data: T): T {
+  cache.set(key, { data, ts: Date.now() })
+  return data
+}
+
+export function invalidateCache(prefix?: string) {
+  if (!prefix) { cache.clear(); return }
+  for (const key of cache.keys()) {
+    if (key.startsWith(prefix)) cache.delete(key)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -187,6 +215,9 @@ function pageToCompany(page: NotionPage): Company {
 }
 
 export async function getCompanies(): Promise<Company[]> {
+  const cached = getCached<Company[]>('companies')
+  if (cached) return cached
+
   const notion = await getNotionClientFromSettings()
   const settings = await readSettings()
   const dbId = settings.notionDBs.companies
@@ -196,22 +227,20 @@ export async function getCompanies(): Promise<Company[]> {
     notion.databases.query({ database_id: dbId })
   )
 
-  return Promise.all(
-    response.results.map(async page => {
-      const company = pageToCompany(page as unknown as NotionPage)
-      const content = await getPageContent(notion, page.id)
-      if (content) company.jobDescription = content
-      return company
-    })
+  return setCache('companies',
+    response.results.map(page => pageToCompany(page as unknown as NotionPage))
   )
 }
 
 export async function getCompany(id: string): Promise<Company | null> {
   const notion = await getNotionClientFromSettings()
   try {
-    const page = await withRetry(() => notion.pages.retrieve({ page_id: id }))
+    // Run both calls in parallel — properties + page content
+    const [page, content] = await Promise.all([
+      withRetry(() => notion.pages.retrieve({ page_id: id })),
+      getPageContent(notion, id),
+    ])
     const company = pageToCompany(page as unknown as NotionPage)
-    const content = await getPageContent(notion, id)
     if (content) company.jobDescription = content
     return company
   } catch {
@@ -222,6 +251,7 @@ export async function getCompany(id: string): Promise<Company | null> {
 export async function createCompany(
   data: Omit<Company, 'id' | 'createdAt'>
 ): Promise<Company> {
+  invalidateCache('companies')
   const notion = await getNotionClientFromSettings()
   const settings = await readSettings()
   const dbId = settings.notionDBs.companies
@@ -255,6 +285,7 @@ export async function updateCompany(
   id: string,
   data: Partial<Omit<Company, 'id' | 'createdAt'>>
 ): Promise<Company> {
+  invalidateCache('companies')
   const notion = await getNotionClientFromSettings()
 
   const properties: Props = {}
@@ -282,6 +313,7 @@ export async function updateCompany(
 }
 
 export async function deleteCompany(id: string): Promise<void> {
+  invalidateCache('companies')
   const notion = await getNotionClientFromSettings()
   await withRetry(() => notion.pages.update({ page_id: id, archived: true }))
 }
@@ -323,6 +355,10 @@ function pageToInterview(page: NotionPage): Interview {
 }
 
 export async function getInterviews(companyId?: string): Promise<Interview[]> {
+  const cacheKey = `interviews:${companyId || 'all'}`
+  const cached = getCached<Interview[]>(cacheKey)
+  if (cached) return cached
+
   const notion = await getNotionClientFromSettings()
   const settings = await readSettings()
   const dbId = settings.notionDBs.interviews
@@ -336,15 +372,8 @@ export async function getInterviews(companyId?: string): Promise<Interview[]> {
     notion.databases.query({ database_id: dbId, ...(filter ? { filter } : {}) })
   )
 
-  return Promise.all(
-    response.results.map(async page => {
-      const interview = pageToInterview(page as unknown as NotionPage)
-      const content = await getPageContent(notion, page.id)
-      const { transcript, aiAnalysis } = splitPageContent(content)
-      if (transcript !== undefined) interview.transcript = transcript
-      if (aiAnalysis !== undefined) interview.aiAnalysis = aiAnalysis
-      return interview
-    })
+  return setCache(cacheKey,
+    response.results.map(page => pageToInterview(page as unknown as NotionPage))
   )
 }
 
@@ -366,6 +395,7 @@ export async function getInterview(id: string): Promise<Interview | null> {
 export async function createInterview(
   data: Omit<Interview, 'id' | 'createdAt'>
 ): Promise<Interview> {
+  invalidateCache('interviews')
   const notion = await getNotionClientFromSettings()
   const settings = await readSettings()
   const dbId = settings.notionDBs.interviews
@@ -397,6 +427,7 @@ export async function updateInterview(
   id: string,
   data: Partial<Omit<Interview, 'id' | 'createdAt'>>
 ): Promise<Interview> {
+  invalidateCache('interviews')
   const notion = await getNotionClientFromSettings()
 
   const properties: Props = {}
@@ -431,6 +462,7 @@ export async function updateInterview(
 }
 
 export async function deleteInterview(id: string): Promise<void> {
+  invalidateCache('interviews')
   const notion = await getNotionClientFromSettings()
   await withRetry(() => notion.pages.update({ page_id: id, archived: true }))
 }

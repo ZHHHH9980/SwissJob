@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { fetchT } from '@/lib/fetch'
 
 type Skill = {
   id: string
@@ -34,15 +35,21 @@ export default function SkillsPage() {
 
   useEffect(() => {
     fetchSkills()
+    const handler = (e: Event) => {
+      const scope = (e as CustomEvent).detail?.scope
+      if (scope === 'skills') fetchSkills()
+    }
+    window.addEventListener('swissjob:refresh', handler)
+    return () => window.removeEventListener('swissjob:refresh', handler)
   }, [])
 
   const fetchSkills = async () => {
     try {
-      const res = await fetch('/api/skills')
+      const res = await fetchT('/api/skills', 'Load skills')
       const data = await res.json()
       setSkills(Array.isArray(data) ? data : [])
-    } catch {
-      setError('Failed to load skills')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load skills')
     } finally {
       setLoading(false)
     }
