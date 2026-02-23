@@ -13,6 +13,8 @@ export type Company = {
   description?: string
   jobDescription?: string
   status: 'pending' | 'in-progress' | 'completed'
+  matchScore?: number | null
+  skills?: string | null  // JSON string: ["skill1", "skill2"]
   createdAt: string
 }
 
@@ -34,6 +36,8 @@ export type Skill = {
   category?: string
   level?: string
   notes?: string
+  frequency?: number
+  source?: string
   createdAt: string
 }
 
@@ -189,6 +193,11 @@ function getPropDate(props: Record<string, unknown>, key: string): string {
   return p?.date?.start ?? ''
 }
 
+function getPropNumber(props: Record<string, unknown>, key: string): number | null {
+  const p = props[key] as { number?: number | null } | undefined
+  return p?.number ?? null
+}
+
 function getPropRelationId(props: Record<string, unknown>, key: string): string {
   const p = props[key] as { relation?: Array<{ id: string }> } | undefined
   return p?.relation?.[0]?.id ?? ''
@@ -210,6 +219,8 @@ function pageToCompany(page: NotionPage): Company {
     website: getPropUrl(props, 'Website') || undefined,
     description: getPropRichText(props, 'Description') || undefined,
     status: (getPropSelect(props, 'Status') || 'pending') as Company['status'],
+    matchScore: getPropNumber(props, 'MatchScore') ?? undefined,
+    skills: getPropRichText(props, 'Skills') || undefined,
     createdAt: page.created_time,
   }
 }
@@ -264,6 +275,10 @@ export async function createCompany(
   if (data.description)
     properties['Description'] = { rich_text: [{ text: { content: data.description.slice(0, 2000) } }] }
   properties['Status'] = { select: { name: data.status || 'pending' } }
+  if ((data as Record<string, unknown>).matchScore != null)
+    properties['MatchScore'] = { number: (data as Record<string, unknown>).matchScore }
+  if ((data as Record<string, unknown>).skills)
+    properties['Skills'] = { rich_text: [{ text: { content: (data as Record<string, unknown>).skills as string } }] }
 
   const page = await withRetry(() =>
     notion.pages.create({
@@ -297,6 +312,12 @@ export async function updateCompany(
     properties['Description'] = { rich_text: [{ text: { content: data.description.slice(0, 2000) } }] }
   if (data.status !== undefined)
     properties['Status'] = { select: { name: data.status } }
+  if (data.matchScore !== undefined)
+    properties['MatchScore'] = { number: data.matchScore as number }
+  if (data.skills !== undefined)
+    properties['Skills'] = data.skills
+      ? { rich_text: [{ text: { content: data.skills } }] }
+      : { rich_text: [] }
 
   const page = await withRetry(() =>
     notion.pages.update({ page_id: id, properties })
@@ -479,6 +500,8 @@ function pageToSkill(page: NotionPage): Skill {
     category: getPropSelect(props, 'Category') || undefined,
     level: getPropSelect(props, 'Level') || undefined,
     notes: getPropRichText(props, 'Notes') || undefined,
+    frequency: getPropNumber(props, 'Frequency') ?? undefined,
+    source: getPropSelect(props, 'Source') || undefined,
     createdAt: page.created_time,
   }
 }
@@ -510,6 +533,8 @@ export async function createSkill(
   if (data.level) properties['Level'] = { select: { name: data.level } }
   if (data.notes)
     properties['Notes'] = { rich_text: [{ text: { content: data.notes.slice(0, 2000) } }] }
+  if (data.frequency != null) properties['Frequency'] = { number: data.frequency }
+  if (data.source) properties['Source'] = { select: { name: data.source } }
 
   const page = await withRetry(() =>
     notion.pages.create({ parent: { database_id: dbId }, properties })
@@ -532,6 +557,10 @@ export async function updateSkill(
     properties['Level'] = data.level ? { select: { name: data.level } } : { select: null }
   if (data.notes !== undefined)
     properties['Notes'] = { rich_text: [{ text: { content: data.notes.slice(0, 2000) } }] }
+  if (data.frequency !== undefined)
+    properties['Frequency'] = { number: data.frequency }
+  if (data.source !== undefined)
+    properties['Source'] = data.source ? { select: { name: data.source } } : { select: null }
 
   const page = await withRetry(() =>
     notion.pages.update({ page_id: id, properties })
@@ -542,6 +571,24 @@ export async function updateSkill(
 export async function deleteSkill(id: string): Promise<void> {
   const notion = await getNotionClientFromSettings()
   await withRetry(() => notion.pages.update({ page_id: id, archived: true }))
+}
+
+export async function upsertSkill(
+  name: string,
+  category?: string,
+  source: string = 'manual'
+): Promise<Skill> {
+  const skills = await getSkills()
+  const existing = skills.find(
+    s => s.name.toLowerCase() === name.toLowerCase()
+  )
+
+  if (existing) {
+    const newFreq = (existing.frequency || 0) + 1
+    return updateSkill(existing.id, { frequency: newFreq })
+  }
+
+  return createSkill({ name, category, source, frequency: 1 })
 }
 
 // ---------------------------------------------------------------------------
